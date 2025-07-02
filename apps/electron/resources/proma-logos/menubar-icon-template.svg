@@ -1,0 +1,39 @@
+<svg width="22" height="22" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Menubar icon template: transparent background + white stripes with rounded container -->
+
+  <defs>
+    <!-- Rounded rectangle mask with more prominent corners -->
+    <mask id="roundedMask">
+      <rect x="100" y="100" width="600" height="600" rx="140" ry="140" fill="white"/>
+    </mask>
+  </defs>
+
+  <!-- Apply rounded mask to all stripes with padding -->
+  <g mask="url(#roundedMask)">
+    <!-- 从近到远逐渐缩小、透明的条纹 - 营造纵深感 -->
+    <!-- 整体缩小并居中，增加边缘留白 -->
+
+    <!-- 第一层 - 最近，最实 -->
+    <rect x="220" y="380" width="70" height="320" rx="12" fill="#FFFFFF" opacity="1"/>
+
+    <!-- 第二层 - 渐远 -->
+    <rect x="315" y="355" width="62" height="290" rx="10" fill="#FFFFFF" opacity="0.85"
+          transform="rotate(-3 346 500)"/>
+
+    <!-- 第三层 - 更远 -->
+    <rect x="400" y="330" width="54" height="260" rx="9" fill="#FFFFFF" opacity="0.7"
+          transform="rotate(-6 427 460)"/>
+
+    <!-- 第四层 - 渐隐 -->
+    <rect x="475" y="305" width="46" height="230" rx="7" fill="#FFFFFF" opacity="0.55"
+          transform="rotate(-9 498 420)"/>
+
+    <!-- 第五层 - 远端 -->
+    <rect x="540" y="280" width="38" height="200" rx="6" fill="#FFFFFF" opacity="0.4"
+          transform="rotate(-12 559 380)"/>
+
+    <!-- 第六层 - 几乎消失 -->
+    <rect x="595" y="255" width="30" height="170" rx="4" fill="#FFFFFF" opacity="0.25"
+          transform="rotate(-15 610 340)"/>
+  </g>
+</svg>
