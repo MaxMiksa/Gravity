@@ -4,6 +4,7 @@ import { existsSync } from 'fs'
 import { createApplicationMenu } from './menu'
 import { registerIpcHandlers } from './ipc'
 import { createTray, destroyTray } from './tray'
+import { createSplashWindow, closeSplashWindow } from './splash'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -36,6 +37,7 @@ function createWindow(): void {
     minWidth: 800,
     minHeight: 600,
     icon: iconExists ? iconPath : undefined,
+    show: false, // Don't show until ready
     webPreferences: {
       preload: join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -56,12 +58,24 @@ function createWindow(): void {
     mainWindow.loadFile(join(__dirname, 'renderer', 'index.html'))
   }
 
+  // Show main window when ready and close splash
+  mainWindow.once('ready-to-show', () => {
+    // Small delay to ensure smooth transition
+    setTimeout(() => {
+      closeSplashWindow()
+      mainWindow?.show()
+    }, 500)
+  })
+
   mainWindow.on('closed', () => {
     mainWindow = null
   })
 }
 
 app.whenReady().then(() => {
+  // Create splash screen first
+  createSplashWindow()
+
   // Create application menu
   const menu = createApplicationMenu()
   Menu.setApplicationMenu(menu)
@@ -80,7 +94,7 @@ app.whenReady().then(() => {
   // Create system tray icon
   createTray()
 
-  // Create main window
+  // Create main window (will be shown when ready)
   createWindow()
 
   app.on('activate', () => {
