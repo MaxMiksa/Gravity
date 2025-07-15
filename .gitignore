@@ -35,3 +35,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # ignore craft-agents-oss folder
 craft-agents-oss
+
+# ignore what_are_humans_thinking folder
+what_are_humans_thinking
