@@ -40,7 +40,7 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
 
   return (
     <div
-      className="h-full flex flex-col bg-background border-r border-border"
+      className="h-full flex flex-col bg-background"
       style={{ width }}
     >
       {/* Sidebar content - add top padding to avoid traffic lights */}
