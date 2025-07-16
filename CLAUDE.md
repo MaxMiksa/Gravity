@@ -176,6 +176,23 @@ This project follows patterns from craft-agents-oss:
 - Components should have explicit return type (`: React.ReactElement`)
 - Use `import type` for type-only imports when possible
 
+## Version Management
+
+**IMPORTANT**: When making code changes and committing:
+
+- **Always increment version numbers** in affected `package.json` files
+- Increment the patch version (e.g., `1.0.0` → `1.0.1`)
+- If changes affect multiple packages, increment version numbers for ALL affected packages
+- This applies to all packages in `packages/` and `apps/` directories
+
+Example workflow:
+```bash
+# 1. Make code changes to packages/core and apps/electron
+# 2. Update version in packages/core/package.json (1.0.0 → 1.0.1)
+# 3. Update version in apps/electron/package.json (1.0.0 → 1.0.1)
+# 4. Commit with version bumps included
+```
+
 ## Development Notes
 
 - **Hot reload**: Main process requires rebuild, renderer has HMR via Vite
