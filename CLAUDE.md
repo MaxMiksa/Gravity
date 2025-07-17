@@ -1,209 +1,216 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+此文件为 Claude Code (claude.ai/code) 在处理此仓库代码时提供指导。
 
-## Project Overview
+**重要提示：** 当功能发生变化时，请保持此文件和 `README.md` 同步更新。请更新文档以反映当前状态。
 
-Proma is a next-gen AI software with general agents, built as an Electron desktop application. The architecture and patterns are based on [craft-agents-oss](https://github.com/craftship/craft-agents-oss).
+## 项目概述
 
-## Monorepo Structure
+Proma 是一个集成通用 AI Agent 的下一代人工智能软件，采用 Electron 桌面应用架构。项目的架构和模式基于 [craft-agents-oss](https://github.com/craftship/craft-agents-oss)。
 
-This is a Bun workspace monorepo:
+## Monorepo 结构
+
+这是一个 Bun workspace monorepo：
 
 ```
 proma/
 ├── packages/
-│   ├── core/       # Core logic, agent integration, types
-│   ├── shared/     # Shared types, configs, and utilities
-│   └── ui/         # Shared UI components (React)
+│   ├── core/       # 核心逻辑、Agent 集成、类型定义
+│   ├── shared/     # 共享类型、配置和工具函数
+│   └── ui/         # 共享 UI 组件 (React)
 └── apps/
-    └── electron/   # Electron desktop application
+    └── electron/   # Electron 桌面应用
         ├── src/
-        │   ├── main/      # Electron main process
-        │   ├── preload/   # Context bridge (IPC)
+        │   ├── main/      # Electron 主进程
+        │   ├── preload/   # 上下文桥接 (IPC)
         │   └── renderer/  # React UI (Vite + Tailwind)
-        └── dist/          # Build output
+        └── dist/          # 构建输出
 ```
 
-**Package naming**: All packages use `@proma/*` scope (e.g., `@proma/core`, `@proma/electron`)
+**包命名规范**：所有包都使用 `@proma/*` 作用域（例如：`@proma/core`、`@proma/electron`）
 
-**Dependencies**: Use `workspace:*` for internal package dependencies in package.json
+**依赖管理**：在 package.json 中使用 `workspace:*` 引用内部包依赖
 
-## Runtime
+## 运行时环境
 
-Use Bun instead of Node.js/npm/pnpm:
+使用 Bun 代替 Node.js/npm/pnpm：
 
-- `bun <file>` instead of `node <file>` or `ts-node <file>`
-- `bun test` instead of `jest` or `vitest`
-- `bun build <file>` instead of `webpack` or `esbuild`
-- `bun install` for dependencies
-- `bun run <script>` for package scripts
-- Bun automatically loads .env files (don't use dotenv package)
+- `bun <file>` 代替 `node <file>` 或 `ts-node <file>`
+- `bun test` 代替 `jest` 或 `vitest`
+- `bun build <file>` 代替 `webpack` 或 `esbuild`
+- `bun install` 安装依赖
+- `bun run <script>` 运行 package scripts
+- Bun 自动加载 .env 文件（无需使用 dotenv 包）
 
-## Common Commands
+## 常用命令
 
-### Development
+### 开发模式
 
 ```bash
-# Start dev mode (recommended - auto-starts both Vite + Electron)
+# 启动开发模式（推荐 - 自动启动 Vite 和 Electron）
 bun run dev
 
-# Manual dev mode (more stable for debugging)
-# Terminal 1:
+# 手动开发模式（调试时更稳定）
+# 终端 1：
 cd apps/electron && bun run dev:vite
-# Terminal 2 (after Vite starts):
+# 终端 2（等待 Vite 启动后）：
 cd apps/electron && bun run dev:electron
 
-# Type checking across all packages
+# 对所有包进行类型检查
 bun run typecheck
 ```
 
-### Building
+### 构建
 
 ```bash
-# Build and run Electron app
+# 构建并运行 Electron 应用
 bun run electron:start
 
-# Build only (no run)
+# 仅构建（不运行）
 bun run electron:build
 
-# Build all packages
+# 构建所有包
 bun run build
 ```
 
-### Electron App Scripts
+### Electron 应用脚本
 
-From `apps/electron/`:
+在 `apps/electron/` 目录下：
 
 ```bash
-bun run build:main        # Build main process (esbuild → dist/main.cjs)
-bun run build:preload     # Build preload script (esbuild → dist/preload.cjs)
-bun run build:renderer    # Build React UI (Vite → dist/renderer/)
-bun run build:resources   # Copy resources/ to dist/
+bun run build:main        # 构建主进程 (esbuild → dist/main.cjs)
+bun run build:preload     # 构建 preload 脚本 (esbuild → dist/preload.cjs)
+bun run build:renderer    # 构建 React UI (Vite → dist/renderer/)
+bun run build:resources   # 复制 resources/ 到 dist/
 ```
 
-### Type Checking
+### 类型检查
 
 ```bash
-bun run typecheck         # Root-level (all packages)
-cd packages/core && bun run typecheck    # Individual package
+bun run typecheck         # 根目录级别（所有包）
+cd packages/core && bun run typecheck    # 单个包
 ```
 
 ## Bun APIs
 
-Prefer Bun-native APIs:
+优先使用 Bun 原生 API：
 
-- `Bun.serve()` for HTTP/WebSocket servers (not Express)
-- `bun:sqlite` for SQLite (not better-sqlite3)
-- `Bun.redis` for Redis (not ioredis)
-- `Bun.sql` for Postgres (not pg/postgres.js)
-- `WebSocket` is built-in (not ws package)
-- `Bun.file` over `node:fs` readFile/writeFile
-- `Bun.$\`command\`` for shell commands (not execa)
+- `Bun.serve()` 用于 HTTP/WebSocket 服务器（不使用 Express）
+- `bun:sqlite` 用于 SQLite（不使用 better-sqlite3）
+- `Bun.redis` 用于 Redis（不使用 ioredis）
+- `Bun.sql` 用于 Postgres（不使用 pg/postgres.js）
+- `WebSocket` 是内置的（不使用 ws 包）
+- `Bun.file` 优于 `node:fs` 的 readFile/writeFile
+- `Bun.$\`command\`` 用于执行 shell 命令（不使用 execa）
 
-## Electron Architecture
+## Electron 架构
 
-### Main Process (`apps/electron/src/main/`)
+### 主进程 (`apps/electron/src/main/`)
 
-- **index.ts**: App lifecycle, window creation, dev/prod mode handling
-- **menu.ts**: Application menu (createApplicationMenu)
-- **ipc.ts**: IPC handlers (registerIpcHandlers)
-- **tray.ts**: System tray icon (createTray, destroyTray)
+- **index.ts**：应用生命周期、窗口创建、开发/生产模式处理
+- **menu.ts**：应用菜单 (createApplicationMenu)
+- **ipc.ts**：IPC 处理器 (registerIpcHandlers)
+- **tray.ts**：系统托盘图标 (createTray, destroyTray)
 
-Key patterns:
-- Use `join(__dirname, '../resources')` for resource paths
-- Dev mode: loads `http://localhost:5173` (Vite dev server)
-- Prod mode: loads `dist/renderer/index.html`
-- Platform-specific icons: .icns (macOS), .ico (Windows), .png (Linux)
+关键模式：
+- 使用 `join(__dirname, '../resources')` 处理资源路径
+- 开发模式：加载 `http://localhost:5173`（Vite 开发服务器）
+- 生产模式：加载 `dist/renderer/index.html`
+- 平台特定图标：.icns (macOS)、.ico (Windows)、.png (Linux)
 
 ### Preload (`apps/electron/src/preload/`)
 
-- Context bridge for secure IPC between main and renderer
-- Use `contextIsolation: true` and `nodeIntegration: false`
+- 用于主进程和渲染进程之间安全 IPC 通信的上下文桥接
+- 使用 `contextIsolation: true` 和 `nodeIntegration: false`
 
-### Renderer (`apps/electron/src/renderer/`)
+### 渲染进程 (`apps/electron/src/renderer/`)
 
-React UI built with Vite:
+使用 Vite 构建的 React UI：
 
-- **main.tsx**: Entry point, renders App component
-- **App.tsx**: Root component, provides AppShellContext
-- **components/app-shell/**: 3-panel layout system
-  - AppShell: Main container with LeftSidebar | NavigatorPanel | MainContentPanel
-  - Layout proportions: 20% | 32% | 48%
-- **contexts/**: React contexts for state management
-- **lib/utils.ts**: Utility functions (cn for className merging)
+- **main.tsx**：入口文件，渲染 App 组件
+- **App.tsx**：根组件，提供 AppShellContext
+- **components/app-shell/**：三面板布局系统
+  - AppShell：主容器，包含 LeftSidebar | NavigatorPanel | MainContentPanel
+  - 布局比例：20% | 32% | 48%
+- **contexts/**：React 上下文用于状态管理
+- **lib/utils.ts**：工具函数（cn 用于合并 className）
 
-**Path alias**: `@/` maps to `apps/electron/src/renderer/`
+**路径别名**：`@/` 映射到 `apps/electron/src/renderer/`
 
-### Build Tools
+### 构建工具
 
-- **Main/Preload**: esbuild (--bundle --platform=node --format=cjs --external:electron)
-- **Renderer**: Vite with React plugin, Tailwind CSS, HMR
-- **Dev server**: Vite on port 5173
+- **主进程/Preload**：esbuild (--bundle --platform=node --format=cjs --external:electron)
+- **渲染进程**：Vite 配合 React 插件、Tailwind CSS、HMR
+- **开发服务器**：Vite 运行在 5173 端口
 
-## UI Framework
+## UI 框架
 
-- **React 18** with TypeScript
-- **Tailwind CSS** for styling (config in `apps/electron/tailwind.config.js`)
-- **lucide-react** for icons
-- **clsx + tailwind-merge** for className utilities (cn function)
+- **React 18** 配合 TypeScript
+- **Tailwind CSS** 用于样式（配置文件：`apps/electron/tailwind.config.js`）
+- **lucide-react** 用于图标
+- **clsx + tailwind-merge** 用于 className 工具函数（cn 函数）
 
-## TypeScript Configuration
+## TypeScript 配置
 
-- **Module**: `"Preserve"` with `"moduleResolution": "bundler"`
-- **JSX**: `"react-jsx"`
-- **Strict mode**: enabled
-- **Target**: ESNext
-- All packages use `"type": "module"` in package.json
-- Use `.ts` extensions in imports (Bun handles them)
+- **Module**：`"Preserve"` 配合 `"moduleResolution": "bundler"`
+- **JSX**：`"react-jsx"`
+- **严格模式**：启用
+- **Target**：ESNext
+- 所有包在 package.json 中使用 `"type": "module"`
+- 在导入时使用 `.ts` 扩展名（Bun 会处理）
 
-## Reference Project Patterns
+## 创作参考
 
-This project follows patterns from craft-agents-oss:
+此项目遵循 craft-agents-oss 的模式，当用户询问你设计的时候，你需要先去参考这个项目，研究它的实现方式，优先跟随这个项目的设计：
 
-- **Session management**: Inbox/archive workflow with statuses
-- **Permission modes**: safe (explore) / ask (ask to edit) / allow-all (auto)
-- **Agent SDK**: Uses @anthropic-ai/claude-agent-sdk
-- **MCP integration**: Model Context Protocol for external sources
-- **Credential storage**: AES-256-GCM encrypted credentials
-- **Config location**: `~/.proma/` (similar to `~/.craft-agent/`)
+- **会话管理**：收件箱/归档工作流，带状态管理
+- **权限模式**：safe（探索）/ ask（请求编辑）/ allow-all（自动）
+- **Agent SDK**：使用 @anthropic-ai/claude-agent-sdk
+- **MCP 集成**：Model Context Protocol 用于外部数据源
+- **凭证存储**：AES-256-GCM 加密凭证
+- **配置位置**：`~/.proma/`（类似 `~/.craft-agent/`）
 
-## Code Style
+## 关于 claude agent SDK 的类型文档及其解释
+- **v1 版本的文档：**：详细文档访问地址，方便 Claude 可以在需要的时候直接抓取该网页的信息：https://platform.claude.com/docs/en/agent-sdk/typescript
+- **v2 版本的文档，大部分是基于 v1 的**：https://platform.claude.com/docs/en/agent-sdk/typescript-v2-preview
 
-- Never use `any` type - create proper interfaces
-- Prefer interface over type for object shapes
-- Use proper TypeScript types for all functions
-- Components should have explicit return type (`: React.ReactElement`)
-- Use `import type` for type-only imports when possible
+## 代码风格
 
-## Version Management
+- 永远不要使用 `any` 类型 - 创建合适的接口
+- 对于对象类型优先使用 interface 而不是 type
+- 为所有函数使用正确的 TypeScript 类型
+- 组件应该有明确的返回类型（`: React.ReactElement`）
+- 尽可能使用 `import type` 进行仅类型导入
 
-**IMPORTANT**: When making code changes and committing:
+## 版本管理
 
-- **Always increment version numbers** in affected `package.json` files
-- Increment the patch version (e.g., `1.0.0` → `1.0.1`)
-- If changes affect multiple packages, increment version numbers for ALL affected packages
-- This applies to all packages in `packages/` and `apps/` directories
+**重要**：在进行代码更改和提交时：
 
-Example workflow:
+- **始终递增版本号**在受影响的 `package.json` 文件中
+- 递增补丁版本（例如：`1.0.0` → `1.0.1`）
+- 如果更改影响多个包，需要递增所有受影响包的版本号
+- 这适用于 `packages/` 和 `apps/` 目录下的所有包
+
+工作流示例：
 ```bash
-# 1. Make code changes to packages/core and apps/electron
-# 2. Update version in packages/core/package.json (1.0.0 → 1.0.1)
-# 3. Update version in apps/electron/package.json (1.0.0 → 1.0.1)
-# 4. Commit with version bumps included
+# 1. 对 packages/core 和 apps/electron 进行代码更改
+# 2. 更新 packages/core/package.json 中的版本 (1.0.0 → 1.0.1)
+# 3. 更新 apps/electron/package.json 中的版本 (1.0.0 → 1.0.1)
+# 4. 提交时包含版本更新
 ```
 
-## Development Notes
+## 开发注意事项
 
-- **Hot reload**: Main process requires rebuild, renderer has HMR via Vite
-- **Dev tools**: Auto-open in dev mode (see `main/index.ts:54`)
-- **Window settings**: 1400x900 default, 800x600 minimum
-- **macOS**: Uses hiddenInset titlebar with vibrancy effects
-- **Icons**: Generate with `bun run generate:icons` in apps/electron/resources/
+- **热重载**：主进程需要重新构建，渲染进程通过 Vite 支持 HMR
+- **开发工具**：开发模式下自动打开（见 `main/index.ts:54`）
+- **窗口设置**：默认 1400x900，最小 800x600
+- **macOS**：使用 hiddenInset 标题栏和毛玻璃效果
+- **图标**：在 apps/electron/resources/ 中使用 `bun run generate:icons` 生成
+- **注释**：所有的代码都需要有明确完备的注释，注释可以采用中文
 
-## Testing
+## 测试
 
-Use Bun's built-in test runner:
+使用 Bun 内置的测试运行器：
 
 ```ts
 import { test, expect } from "bun:test";
@@ -213,4 +220,4 @@ test("example", () => {
 });
 ```
 
-Run with: `bun test`
+运行命令：`bun test`
