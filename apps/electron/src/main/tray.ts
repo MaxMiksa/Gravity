@@ -1,51 +1,23 @@
-import { Tray, Menu, nativeTheme, app, nativeImage } from 'electron'
+import { Tray, Menu, app, nativeImage } from 'electron'
 import { join } from 'path'
 import { existsSync } from 'fs'
 
 let tray: Tray | null = null
 
 /**
- * Get the appropriate tray icon path based on system theme
+ * 获取托盘图标路径
+ * 所有平台统一使用 Template 图标
  */
 function getTrayIconPath(): string {
   const resourcesDir = join(__dirname, '../resources/proma-logos')
-
-  // macOS uses template images that adapt to theme automatically
-  // For now, we'll manually switch based on theme
-  const isDarkMode = nativeTheme.shouldUseDarkColors
-
-  if (process.platform === 'darwin') {
-    // macOS: white icon for dark menu bar, black icon for light menu bar
-    return isDarkMode
-      ? join(resourcesDir, 'proma_logo_white.png')
-      : join(resourcesDir, 'proma_logo_black.png')
-  } else {
-    // Windows/Linux: usually use dark icon
-    return join(resourcesDir, 'proma_logo_black.png')
-  }
+  // 使用 Template 图标：
+  // - macOS: 系统自动根据 DPI 选择 @1x/@2x/@3x，并根据菜单栏主题调整颜色
+  // - Windows/Linux: 直接使用白色图标
+  return join(resourcesDir, 'iconTemplate.png')
 }
 
 /**
- * Update tray icon based on current theme
- */
-function updateTrayIcon(): void {
-  if (!tray) return
-
-  const iconPath = getTrayIconPath()
-  if (existsSync(iconPath)) {
-    const image = nativeImage.createFromPath(iconPath)
-
-    // macOS: mark as template image for better rendering
-    if (process.platform === 'darwin') {
-      image.setTemplateImage(true)
-    }
-
-    tray.setImage(image)
-  }
-}
-
-/**
- * Create system tray icon with menu
+ * 创建系统托盘图标和菜单
  */
 export function createTray(): Tray | null {
   const iconPath = getTrayIconPath()
@@ -58,24 +30,24 @@ export function createTray(): Tray | null {
   try {
     const image = nativeImage.createFromPath(iconPath)
 
-    // macOS: mark as template image for automatic theme adaptation
-    // Template images should be monochrome and use alpha channel for shape
+    // macOS: 标记为 Template 图像
+    // Template 图像必须是单色的，使用 alpha 通道定义形状
+    // 系统会自动根据菜单栏主题填充颜色
     if (process.platform === 'darwin') {
       image.setTemplateImage(true)
-      tray = new Tray(image)
-    } else {
-      tray = new Tray(image)
     }
 
-    // Set tooltip
+    tray = new Tray(image)
+
+    // 设置 tooltip
     tray.setToolTip('Proma')
 
-    // Create context menu
+    // 创建右键菜单
     const contextMenu = Menu.buildFromTemplate([
       {
         label: 'Show Proma',
         click: () => {
-          // Show/focus the main window
+          // 显示/聚焦主窗口
           const windows = require('electron').BrowserWindow.getAllWindows()
           if (windows.length > 0) {
             const mainWindow = windows[0]
@@ -100,7 +72,7 @@ export function createTray(): Tray | null {
 
     tray.setContextMenu(contextMenu)
 
-    // Click behavior (show/hide window)
+    // 点击行为：显示/隐藏窗口
     tray.on('click', () => {
       const windows = require('electron').BrowserWindow.getAllWindows()
       if (windows.length > 0) {
@@ -114,9 +86,6 @@ export function createTray(): Tray | null {
       }
     })
 
-    // Listen for theme changes
-    nativeTheme.on('updated', updateTrayIcon)
-
     console.log('System tray created')
     return tray
   } catch (error) {
@@ -126,7 +95,7 @@ export function createTray(): Tray | null {
 }
 
 /**
- * Destroy the system tray
+ * 销毁系统托盘
  */
 export function destroyTray(): void {
   if (tray) {
@@ -136,7 +105,7 @@ export function destroyTray(): void {
 }
 
 /**
- * Get the current tray instance
+ * 获取当前托盘实例
  */
 export function getTray(): Tray | null {
   return tray
