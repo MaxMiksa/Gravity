@@ -48,19 +48,19 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
       <div className="flex-1 flex flex-col gap-1 pt-[50px] pb-3 px-3">
         <SidebarItem
           icon={<Inbox size={16} />}
-          label="All Chats"
+          label="对话列表"
           active={activeItem === 'all-chats'}
           onClick={() => setActiveItem('all-chats')}
         />
         <SidebarItem
           icon={<Flag size={16} />}
-          label="Flagged"
+          label="旗标对话"
           active={activeItem === 'flagged'}
           onClick={() => setActiveItem('flagged')}
         />
         <SidebarItem
           icon={<FolderOpen size={16} />}
-          label="Sources"
+          label="数据源"
           active={activeItem === 'sources'}
           onClick={() => setActiveItem('sources')}
         />
@@ -70,7 +70,7 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
 
         <SidebarItem
           icon={<Settings size={16} />}
-          label="Settings"
+          label="设置"
           active={activeItem === 'settings'}
           onClick={() => setActiveItem('settings')}
         />
