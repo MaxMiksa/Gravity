@@ -4,9 +4,10 @@ import { existsSync } from 'fs'
 import { createApplicationMenu } from './menu'
 import { registerIpcHandlers } from './ipc'
 import { createTray, destroyTray } from './tray'
-import { createSplashWindow, closeSplashWindow } from './splash'
 
 let mainWindow: BrowserWindow | null = null
+// 标记是否真正要退出应用（用于区分关闭窗口和退出应用）
+let isQuitting = false
 
 /**
  * Get the appropriate app icon path for the current platform
@@ -58,14 +59,23 @@ function createWindow(): void {
     mainWindow.loadFile(join(__dirname, 'renderer', 'index.html'))
   }
 
-  // Show main window when ready and close splash
+  // Show main window when ready
   mainWindow.once('ready-to-show', () => {
-    // Small delay to ensure smooth transition
-    setTimeout(() => {
-      closeSplashWindow()
-      mainWindow?.show()
-    }, 500)
+    mainWindow?.show()
   })
+
+  // macOS: 点击关闭按钮时隐藏窗口而不是退出（除非正在退出应用）
+  // 开发模式下直接关闭以简化调试
+  if (process.platform === 'darwin' && !isDev) {
+    mainWindow.on('close', (event) => {
+      if (!isQuitting) {
+        event.preventDefault()
+        mainWindow?.hide()
+        // 隐藏 Dock 图标，让应用完全进入后台
+        app.dock?.hide()
+      }
+    })
+  }
 
   mainWindow.on('closed', () => {
     mainWindow = null
@@ -73,9 +83,6 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  // Create splash screen first
-  createSplashWindow()
-
   // Create application menu
   const menu = createApplicationMenu()
   Menu.setApplicationMenu(menu)
@@ -105,12 +112,17 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  // 开发模式下或非 macOS：关闭所有窗口时退出应用
+  // 生产模式 macOS：保持应用运行（可通过 tray 或 Dock 重新打开）
+  const isDev = !app.isPackaged
+  if (process.platform !== 'darwin' || isDev) {
     app.quit()
   }
 })
 
 app.on('before-quit', () => {
+  // 标记正在退出，让 close 事件不再阻止关闭
+  isQuitting = true
   // Clean up system tray before quitting
   destroyTray()
 })
