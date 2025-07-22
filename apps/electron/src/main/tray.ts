@@ -23,7 +23,7 @@ export function createTray(): Tray | null {
   const iconPath = getTrayIconPath()
 
   if (!existsSync(iconPath)) {
-    console.warn('Tray icon not found at:', iconPath)
+    console.warn('托盘图标未找到:', iconPath)
     return null
   }
 
@@ -45,7 +45,7 @@ export function createTray(): Tray | null {
     // 创建右键菜单
     const contextMenu = Menu.buildFromTemplate([
       {
-        label: 'Show Proma',
+        label: '显示 Proma',
         click: () => {
           // 显示/聚焦主窗口
           const windows = require('electron').BrowserWindow.getAllWindows()
@@ -63,7 +63,7 @@ export function createTray(): Tray | null {
         type: 'separator'
       },
       {
-        label: 'Quit Proma',
+        label: '退出 Proma',
         click: () => {
           app.quit()
         }
@@ -86,10 +86,10 @@ export function createTray(): Tray | null {
       }
     })
 
-    console.log('System tray created')
+    console.log('系统托盘已创建')
     return tray
   } catch (error) {
-    console.error('Failed to create system tray:', error)
+    console.error('创建系统托盘失败:', error)
     return null
   }
 }
