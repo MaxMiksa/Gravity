@@ -1,0 +1,142 @@
+# electron-builder 配置
+# 文档: https://www.electron.build/configuration/configuration
+
+appId: com.proma.app
+productName: Proma
+copyright: Copyright © 2024-2025 Proma
+
+# 目录配置
+directories:
+  output: out
+  buildResources: resources
+
+# 压缩配置
+compression: normal
+
+# ASAR 打包配置
+asar: true
+asarUnpack:
+  # Claude Agent SDK 的 vendor 模块需要解压（包含原生二进制）
+  - "node_modules/@anthropic-ai/claude-agent-sdk/vendor/**/*"
+
+# 通用文件配置
+files:
+  - dist/**/*
+  - package.json
+  # 排除所有平台的 ripgrep，会在平台特定配置中添加正确的版本
+  - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/**/*"
+
+# 额外资源配置（会复制到 resources 目录）
+extraResources:
+  # 打包的 Bun 二进制 - 使用变量匹配当前构建平台
+  - from: "vendor/bun/${os}-${arch}"
+    to: "vendor/bun"
+    filter:
+      - "**/*"
+
+# ============================================
+# macOS 配置
+# ============================================
+mac:
+  category: public.app-category.developer-tools
+  icon: resources/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: resources/entitlements.mac.plist
+  entitlementsInherit: resources/entitlements.mac.plist
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+    - target: zip
+      arch:
+        - arm64
+        - x64
+  # macOS 额外资源
+  extraResources:
+    # 根据架构选择正确的 ripgrep
+    - from: "node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/${arch}-darwin"
+      to: "vendor/ripgrep"
+      filter:
+        - "**/*"
+
+# DMG 配置
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+  window:
+    width: 540
+    height: 380
+
+# ============================================
+# Windows 配置
+# ============================================
+win:
+  icon: resources/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+  # Windows 额外资源
+  extraResources:
+    - from: "node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/x64-win32"
+      to: "vendor/ripgrep"
+      filter:
+        - "**/*"
+
+# NSIS 安装程序配置
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+# ============================================
+# Linux 配置
+# ============================================
+linux:
+  icon: resources/icon.png
+  category: Development
+  target:
+    - target: AppImage
+      arch:
+        - x64
+        - arm64
+    - target: deb
+      arch:
+        - x64
+        - arm64
+  # Linux 额外资源
+  extraResources:
+    - from: "node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/${arch}-linux"
+      to: "vendor/ripgrep"
+      filter:
+        - "**/*"
+
+# AppImage 配置
+appImage:
+  artifactName: "${productName}-${version}-${arch}.AppImage"
+
+# Debian 包配置
+deb:
+  depends:
+    - gconf2
+    - gconf-service
+    - libnotify4
+    - libappindicator1
+    - libxtst6
+    - libnss3
+    - git
+
+# ============================================
+# 发布配置
+# ============================================
+publish:
+  provider: generic
+  url: ""
