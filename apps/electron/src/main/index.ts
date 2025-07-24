@@ -4,6 +4,7 @@ import { existsSync } from 'fs'
 import { createApplicationMenu } from './menu'
 import { registerIpcHandlers } from './ipc'
 import { createTray, destroyTray } from './tray'
+import { initializeRuntime } from './lib/runtime-init'
 
 let mainWindow: BrowserWindow | null = null
 // 标记是否真正要退出应用（用于区分关闭窗口和退出应用）
@@ -82,7 +83,11 @@ function createWindow(): void {
   })
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // 初始化运行时环境（Shell 环境 + Bun + Git 检测）
+  // 必须在其他初始化之前执行，确保环境变量正确加载
+  await initializeRuntime()
+
   // Create application menu
   const menu = createApplicationMenu()
   Menu.setApplicationMenu(menu)
