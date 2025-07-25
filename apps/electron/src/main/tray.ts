@@ -23,7 +23,7 @@ export function createTray(): Tray | null {
   const iconPath = getTrayIconPath()
 
   if (!existsSync(iconPath)) {
-    console.warn('托盘图标未找到:', iconPath)
+    console.warn('Tray icon not found at:', iconPath)
     return null
   }
 
@@ -86,10 +86,10 @@ export function createTray(): Tray | null {
       }
     })
 
-    console.log('系统托盘已创建')
+    console.log('System tray created')
     return tray
   } catch (error) {
-    console.error('创建系统托盘失败:', error)
+    console.error('Failed to create system tray:', error)
     return null
   }
 }
