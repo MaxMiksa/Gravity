@@ -8,3 +8,6 @@ export interface Workspace {
   name: string
   path: string
 }
+
+// 运行时相关类型
+export * from './runtime'
