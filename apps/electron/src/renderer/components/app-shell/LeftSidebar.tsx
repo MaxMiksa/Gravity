@@ -1,11 +1,15 @@
 /**
- * LeftSidebar - Vertical navigation sidebar
- * Displays static navigation items with icons
+ * LeftSidebar - 左侧导航栏
+ *
+ * 包含：
+ * - Chat/Agent 模式切换器
+ * - 导航菜单项
  */
 
 import * as React from 'react'
-import { Inbox, Flag, FolderOpen, Settings } from 'lucide-react'
+import { MessagesSquare, Pin, FolderOpen, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ModeSwitcher } from './ModeSwitcher'
 
 interface SidebarItemProps {
   icon: React.ReactNode
@@ -43,29 +47,34 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
       className="h-full flex flex-col bg-background"
       style={{ width }}
     >
-      {/* Sidebar content - add top padding to avoid traffic lights */}
-      {/* On macOS, traffic lights are at (18, 18), need ~50px clear space */}
-      <div className="flex-1 flex flex-col gap-1 pt-[50px] pb-3 px-3">
+      {/* 顶部留空，避开 macOS 红绿灯 */}
+      <div className="pt-[50px]">
+        {/* 模式切换器 */}
+        <ModeSwitcher />
+      </div>
+
+      {/* 导航菜单 */}
+      <div className="flex-1 flex flex-col gap-1 pt-3 pb-3 px-3">
         <SidebarItem
-          icon={<Inbox size={16} />}
+          icon={<Pin size={12} />}
+          label="置顶对话"
+          active={activeItem === 'pinned'}
+          onClick={() => setActiveItem('pinned')}
+        />
+        <SidebarItem
+          icon={<MessagesSquare size={12} />}
           label="对话列表"
           active={activeItem === 'all-chats'}
           onClick={() => setActiveItem('all-chats')}
         />
-        <SidebarItem
-          icon={<Flag size={16} />}
-          label="旗标对话"
-          active={activeItem === 'flagged'}
-          onClick={() => setActiveItem('flagged')}
-        />
-        <SidebarItem
+        {/* <SidebarItem
           icon={<FolderOpen size={16} />}
           label="数据源"
           active={activeItem === 'sources'}
           onClick={() => setActiveItem('sources')}
-        />
+        /> */}
 
-        {/* Spacer */}
+        {/* 弹性空间 */}
         <div className="flex-1" />
 
         <SidebarItem
