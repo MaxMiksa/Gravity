@@ -4,7 +4,6 @@
     "composite": true,
     "jsx": "react-jsx",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "types": ["node"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/renderer/*"]
