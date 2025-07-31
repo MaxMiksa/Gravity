@@ -5,9 +5,24 @@
  */
 
 import { ipcMain } from 'electron'
-import { IPC_CHANNELS } from '@proma/shared'
-import type { RuntimeStatus, GitRepoStatus } from '@proma/shared'
+import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS } from '@proma/shared'
+import type {
+  RuntimeStatus,
+  GitRepoStatus,
+  Channel,
+  ChannelCreateInput,
+  ChannelUpdateInput,
+  ChannelTestResult,
+} from '@proma/shared'
 import { getRuntimeStatus, getGitRepoStatus } from './lib/runtime-init'
+import {
+  listChannels,
+  createChannel,
+  updateChannel,
+  deleteChannel,
+  decryptApiKey,
+  testChannel,
+} from './lib/channel-manager'
 
 /**
  * 注册 IPC 处理器
@@ -15,9 +30,17 @@ import { getRuntimeStatus, getGitRepoStatus } from './lib/runtime-init'
  * 注册的通道：
  * - runtime:get-status: 获取运行时状态
  * - git:get-repo-status: 获取指定目录的 Git 仓库状态
+ * - channel:list: 获取所有渠道列表
+ * - channel:create: 创建渠道
+ * - channel:update: 更新渠道
+ * - channel:delete: 删除渠道
+ * - channel:decrypt-key: 解密 API Key
+ * - channel:test: 测试渠道连接
  */
 export function registerIpcHandlers(): void {
   console.log('[IPC] 正在注册 IPC 处理器...')
+
+  // ===== 运行时相关 =====
 
   // 获取运行时状态
   ipcMain.handle(
@@ -37,6 +60,56 @@ export function registerIpcHandlers(): void {
       }
 
       return getGitRepoStatus(dirPath)
+    }
+  )
+
+  // ===== 渠道管理相关 =====
+
+  // 获取所有渠道（apiKey 保持加密态）
+  ipcMain.handle(
+    CHANNEL_IPC_CHANNELS.LIST,
+    async (): Promise<Channel[]> => {
+      return listChannels()
+    }
+  )
+
+  // 创建渠道
+  ipcMain.handle(
+    CHANNEL_IPC_CHANNELS.CREATE,
+    async (_, input: ChannelCreateInput): Promise<Channel> => {
+      return createChannel(input)
+    }
+  )
+
+  // 更新渠道
+  ipcMain.handle(
+    CHANNEL_IPC_CHANNELS.UPDATE,
+    async (_, id: string, input: ChannelUpdateInput): Promise<Channel> => {
+      return updateChannel(id, input)
+    }
+  )
+
+  // 删除渠道
+  ipcMain.handle(
+    CHANNEL_IPC_CHANNELS.DELETE,
+    async (_, id: string): Promise<void> => {
+      return deleteChannel(id)
+    }
+  )
+
+  // 解密 API Key（仅在用户查看时调用）
+  ipcMain.handle(
+    CHANNEL_IPC_CHANNELS.DECRYPT_KEY,
+    async (_, channelId: string): Promise<string> => {
+      return decryptApiKey(channelId)
+    }
+  )
+
+  // 测试渠道连接
+  ipcMain.handle(
+    CHANNEL_IPC_CHANNELS.TEST,
+    async (_, channelId: string): Promise<ChannelTestResult> => {
+      return testChannel(channelId)
     }
   )
 
