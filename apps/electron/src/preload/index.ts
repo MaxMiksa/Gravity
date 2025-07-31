@@ -6,13 +6,22 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron'
-import { IPC_CHANNELS } from '@proma/shared'
-import type { RuntimeStatus, GitRepoStatus } from '@proma/shared'
+import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS } from '@proma/shared'
+import type {
+  RuntimeStatus,
+  GitRepoStatus,
+  Channel,
+  ChannelCreateInput,
+  ChannelUpdateInput,
+  ChannelTestResult,
+} from '@proma/shared'
 
 /**
  * 暴露给渲染进程的 API 接口定义
  */
 export interface ElectronAPI {
+  // ===== 运行时相关 =====
+
   /**
    * 获取运行时状态
    * @returns 运行时状态，包含 Bun、Git 等信息
@@ -25,18 +34,64 @@ export interface ElectronAPI {
    * @returns Git 仓库状态
    */
   getGitRepoStatus: (dirPath: string) => Promise<GitRepoStatus | null>
+
+  // ===== 渠道管理相关 =====
+
+  /** 获取所有渠道列表（apiKey 保持加密态） */
+  listChannels: () => Promise<Channel[]>
+
+  /** 创建渠道（apiKey 为明文，主进程加密） */
+  createChannel: (input: ChannelCreateInput) => Promise<Channel>
+
+  /** 更新渠道 */
+  updateChannel: (id: string, input: ChannelUpdateInput) => Promise<Channel>
+
+  /** 删除渠道 */
+  deleteChannel: (id: string) => Promise<void>
+
+  /** 解密获取明文 API Key（仅在用户查看时调用） */
+  decryptApiKey: (channelId: string) => Promise<string>
+
+  /** 测试渠道连接 */
+  testChannel: (channelId: string) => Promise<ChannelTestResult>
 }
 
 /**
  * 实现 ElectronAPI 接口
  */
 const electronAPI: ElectronAPI = {
+  // 运行时
   getRuntimeStatus: () => {
     return ipcRenderer.invoke(IPC_CHANNELS.GET_RUNTIME_STATUS)
   },
 
   getGitRepoStatus: (dirPath: string) => {
     return ipcRenderer.invoke(IPC_CHANNELS.GET_GIT_REPO_STATUS, dirPath)
+  },
+
+  // 渠道管理
+  listChannels: () => {
+    return ipcRenderer.invoke(CHANNEL_IPC_CHANNELS.LIST)
+  },
+
+  createChannel: (input: ChannelCreateInput) => {
+    return ipcRenderer.invoke(CHANNEL_IPC_CHANNELS.CREATE, input)
+  },
+
+  updateChannel: (id: string, input: ChannelUpdateInput) => {
+    return ipcRenderer.invoke(CHANNEL_IPC_CHANNELS.UPDATE, id, input)
+  },
+
+  deleteChannel: (id: string) => {
+    return ipcRenderer.invoke(CHANNEL_IPC_CHANNELS.DELETE, id)
+  },
+
+  decryptApiKey: (channelId: string) => {
+    return ipcRenderer.invoke(CHANNEL_IPC_CHANNELS.DECRYPT_KEY, channelId)
+  },
+
+  testChannel: (channelId: string) => {
+    return ipcRenderer.invoke(CHANNEL_IPC_CHANNELS.TEST, channelId)
   },
 }
 
