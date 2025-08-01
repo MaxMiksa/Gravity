@@ -3,13 +3,16 @@
  *
  * 包含：
  * - Chat/Agent 模式切换器
- * - 导航菜单项
+ * - 导航菜单项（点击切换主内容区视图）
  */
 
 import * as React from 'react'
-import { MessagesSquare, Pin, FolderOpen, Settings } from 'lucide-react'
+import { useAtom } from 'jotai'
+import { MessagesSquare, Pin, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ModeSwitcher } from './ModeSwitcher'
+import { activeViewAtom } from '@/atoms/active-view'
+import type { ActiveView } from '@/atoms/active-view'
 
 interface SidebarItemProps {
   icon: React.ReactNode
@@ -23,7 +26,7 @@ function SidebarItem({ icon, label, active, onClick }: SidebarItemProps): React.
     <button
       onClick={onClick}
       className={cn(
-        'w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
+        'w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors titlebar-no-drag',
         active
           ? 'bg-muted text-foreground'
           : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
@@ -39,8 +42,32 @@ export interface LeftSidebarProps {
   width: number
 }
 
+/** 侧边栏导航项标识 */
+type SidebarItemId = 'pinned' | 'all-chats' | 'settings'
+
+/** 导航项到视图的映射 */
+const ITEM_TO_VIEW: Record<SidebarItemId, ActiveView> = {
+  pinned: 'conversations',
+  'all-chats': 'conversations',
+  settings: 'settings',
+}
+
 export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
-  const [activeItem, setActiveItem] = React.useState('all-chats')
+  const [activeView, setActiveView] = useAtom(activeViewAtom)
+  const [activeItem, setActiveItem] = React.useState<SidebarItemId>('all-chats')
+
+  /** 处理导航项点击 */
+  const handleItemClick = (item: SidebarItemId): void => {
+    setActiveItem(item)
+    setActiveView(ITEM_TO_VIEW[item])
+  }
+
+  // 当 activeView 从外部改变时，同步 activeItem
+  React.useEffect(() => {
+    if (activeView === 'conversations' && activeItem === 'settings') {
+      setActiveItem('all-chats')
+    }
+  }, [activeView, activeItem])
 
   return (
     <div
@@ -59,20 +86,14 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
           icon={<Pin size={12} />}
           label="置顶对话"
           active={activeItem === 'pinned'}
-          onClick={() => setActiveItem('pinned')}
+          onClick={() => handleItemClick('pinned')}
         />
         <SidebarItem
           icon={<MessagesSquare size={12} />}
           label="对话列表"
           active={activeItem === 'all-chats'}
-          onClick={() => setActiveItem('all-chats')}
+          onClick={() => handleItemClick('all-chats')}
         />
-        {/* <SidebarItem
-          icon={<FolderOpen size={16} />}
-          label="数据源"
-          active={activeItem === 'sources'}
-          onClick={() => setActiveItem('sources')}
-        /> */}
 
         {/* 弹性空间 */}
         <div className="flex-1" />
@@ -81,7 +102,7 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
           icon={<Settings size={16} />}
           label="设置"
           active={activeItem === 'settings'}
-          onClick={() => setActiveItem('settings')}
+          onClick={() => handleItemClick('settings')}
         />
       </div>
     </div>

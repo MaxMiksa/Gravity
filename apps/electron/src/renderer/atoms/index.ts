@@ -4,3 +4,4 @@
  */
 
 export * from './app-mode'
+export * from './active-view'
