@@ -13,6 +13,8 @@ import type {
   ChannelCreateInput,
   ChannelUpdateInput,
   ChannelTestResult,
+  FetchModelsInput,
+  FetchModelsResult,
 } from '@proma/shared'
 import { getRuntimeStatus, getGitRepoStatus } from './lib/runtime-init'
 import {
@@ -22,6 +24,8 @@ import {
   deleteChannel,
   decryptApiKey,
   testChannel,
+  testChannelDirect,
+  fetchModels,
 } from './lib/channel-manager'
 
 /**
@@ -36,6 +40,8 @@ import {
  * - channel:delete: 删除渠道
  * - channel:decrypt-key: 解密 API Key
  * - channel:test: 测试渠道连接
+ * - channel:test-direct: 直接测试连接（无需已保存渠道）
+ * - channel:fetch-models: 从供应商拉取可用模型列表
  */
 export function registerIpcHandlers(): void {
   console.log('[IPC] 正在注册 IPC 处理器...')
@@ -110,6 +116,22 @@ export function registerIpcHandlers(): void {
     CHANNEL_IPC_CHANNELS.TEST,
     async (_, channelId: string): Promise<ChannelTestResult> => {
       return testChannel(channelId)
+    }
+  )
+
+  // 直接测试连接（无需已保存渠道，传入明文凭证）
+  ipcMain.handle(
+    CHANNEL_IPC_CHANNELS.TEST_DIRECT,
+    async (_, input: FetchModelsInput): Promise<ChannelTestResult> => {
+      return testChannelDirect(input)
+    }
+  )
+
+  // 从供应商拉取可用模型列表（直接传入凭证，无需已保存渠道）
+  ipcMain.handle(
+    CHANNEL_IPC_CHANNELS.FETCH_MODELS,
+    async (_, input: FetchModelsInput): Promise<FetchModelsResult> => {
+      return fetchModels(input)
     }
   )
 
