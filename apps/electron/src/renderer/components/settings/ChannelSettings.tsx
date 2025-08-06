@@ -81,7 +81,7 @@ export function ChannelSettings(): React.ReactElement {
         <div>
           <h3 className="text-lg font-medium text-foreground">渠道配置</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            管理 AI 提供商连接，配置 API Key 和可用模型
+            管理 AI 供应商连接，配置 API Key 和可用模型
           </p>
         </div>
         <button
