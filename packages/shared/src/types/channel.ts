@@ -1,17 +1,17 @@
 /**
  * 渠道（Channel）相关类型定义
  *
- * 渠道是用户配置的 AI 提供商连接，包含 API Key、模型列表等信息。
+ * 渠道是用户配置的 AI 供应商连接，包含 API Key、模型列表等信息。
  * API Key 使用 Electron safeStorage 加密后存储在本地配置文件中。
  */
 
 /**
- * 支持的 AI 提供商类型
+ * 支持的 AI 供应商类型
  */
 export type ProviderType = 'anthropic' | 'openai' | 'deepseek' | 'google' | 'custom'
 
 /**
- * 各提供商的默认 Base URL
+ * 各供应商的默认 Base URL
  */
 export const PROVIDER_DEFAULT_URLS: Record<ProviderType, string> = {
   anthropic: 'https://api.anthropic.com',
@@ -22,14 +22,14 @@ export const PROVIDER_DEFAULT_URLS: Record<ProviderType, string> = {
 }
 
 /**
- * 提供商显示名称
+ * 供应商显示名称
  */
 export const PROVIDER_LABELS: Record<ProviderType, string> = {
   anthropic: 'Anthropic',
   openai: 'OpenAI',
   deepseek: 'DeepSeek',
   google: 'Google',
-  custom: '自定义',
+  custom: 'OpenAI 兼容格式',
 }
 
 /**
@@ -54,7 +54,7 @@ export interface Channel {
   id: string
   /** 渠道名称（用户自定义） */
   name: string
-  /** AI 提供商类型 */
+  /** AI 供应商类型 */
   provider: ProviderType
   /** API Base URL */
   baseUrl: string
@@ -117,6 +117,28 @@ export interface ChannelTestResult {
 }
 
 /**
+ * 拉取模型的输入参数（无需已保存的渠道，直接传入凭证）
+ */
+export interface FetchModelsInput {
+  provider: ProviderType
+  baseUrl: string
+  /** 明文 API Key */
+  apiKey: string
+}
+
+/**
+ * 拉取模型的结果
+ */
+export interface FetchModelsResult {
+  /** 是否成功 */
+  success: boolean
+  /** 结果消息 */
+  message: string
+  /** 获取到的模型列表 */
+  models: ChannelModel[]
+}
+
+/**
  * 渠道相关 IPC 通道常量
  */
 export const CHANNEL_IPC_CHANNELS = {
@@ -132,4 +154,8 @@ export const CHANNEL_IPC_CHANNELS = {
   DECRYPT_KEY: 'channel:decrypt-key',
   /** 测试渠道连接 */
   TEST: 'channel:test',
+  /** 从供应商拉取可用模型列表 */
+  FETCH_MODELS: 'channel:fetch-models',
+  /** 直接测试连接（无需已保存渠道，传入明文凭证） */
+  TEST_DIRECT: 'channel:test-direct',
 } as const
