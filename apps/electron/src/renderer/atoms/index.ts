@@ -5,3 +5,4 @@
 
 export * from './app-mode'
 export * from './active-view'
+export * from './settings-tab'
