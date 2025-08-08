@@ -5,6 +5,8 @@
  * - 基本信息（名称、供应商、Base URL、API Key）
  * - 模型列表编辑
  * - 连接测试
+ *
+ * 使用设置原语组件实现卡片化布局。
  */
 
 import * as React from 'react'
@@ -22,6 +24,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   PROVIDER_DEFAULT_URLS,
   PROVIDER_LABELS,
@@ -34,6 +37,13 @@ import type {
   FetchModelsResult,
   ProviderType,
 } from '@proma/shared'
+import {
+  SettingsSection,
+  SettingsCard,
+  SettingsInput,
+  SettingsSelect,
+  SettingsToggle,
+} from './primitives'
 
 interface ChannelFormProps {
   /** 编辑模式下传入已有渠道，创建模式传 null */
@@ -44,6 +54,12 @@ interface ChannelFormProps {
 
 /** 所有可选供应商 */
 const PROVIDER_OPTIONS: ProviderType[] = ['anthropic', 'openai', 'deepseek', 'google', 'custom']
+
+/** 供应商选项（用于 SettingsSelect） */
+const PROVIDER_SELECT_OPTIONS = PROVIDER_OPTIONS.map((p) => ({
+  value: p,
+  label: PROVIDER_LABELS[p],
+}))
 
 /** 各供应商的 Chat 端点路径，用于 Base URL 预览 */
 const PROVIDER_CHAT_PATHS: Record<ProviderType, string> = {
@@ -63,7 +79,6 @@ function buildPreviewUrl(baseUrl: string, provider: ProviderType): string {
   const trimmed = baseUrl.trim().replace(/\/+$/, '')
 
   if (provider === 'anthropic') {
-    // 如果已经包含版本路径（/v1、/v2 等），只追加 /messages
     if (trimmed.match(/\/v\d+$/)) {
       return `${trimmed}/messages`
     }
@@ -111,9 +126,10 @@ export function ChannelForm({ channel, onSaved, onCancel }: ChannelFormProps): R
   }, [isEdit, channel, apiKeyLoaded])
 
   // 切换供应商时自动更新 Base URL
-  const handleProviderChange = (newProvider: ProviderType): void => {
-    setProvider(newProvider)
-    setBaseUrl(PROVIDER_DEFAULT_URLS[newProvider])
+  const handleProviderChange = (newProvider: string): void => {
+    const p = newProvider as ProviderType
+    setProvider(p)
+    setBaseUrl(PROVIDER_DEFAULT_URLS[p])
     setTestResult(null)
   }
 
@@ -240,10 +256,10 @@ export function ChannelForm({ channel, onSaved, onCancel }: ChannelFormProps): R
   }
 
   return (
-    <div className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {/* 标题栏 */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onCancel}>
+        <Button variant="ghost" size="icon" className="h-8 w-8" type="button" onClick={onCancel}>
           <ArrowLeft size={18} />
         </Button>
         <h3 className="text-lg font-medium text-foreground">
@@ -251,128 +267,126 @@ export function ChannelForm({ channel, onSaved, onCancel }: ChannelFormProps): R
         </h3>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {/* 渠道名称 */}
-        <FormField label="渠道名称">
-          <input
-            type="text"
+      {/* 基本信息卡片 */}
+      <SettingsSection title="基本信息">
+        <SettingsCard>
+          <SettingsInput
+            label="渠道名称"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={setName}
             placeholder="例如: My Anthropic"
-            className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
             required
           />
-        </FormField>
-
-        {/* 供应商类型选择 */}
-        <FormField label="供应商类型">
-          <div className="flex flex-wrap gap-2">
-            {PROVIDER_OPTIONS.map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => handleProviderChange(p)}
-                className={cn(
-                  'px-3 py-1.5 rounded-md text-sm border transition-colors',
-                  provider === p
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-input text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                )}
-              >
-                {PROVIDER_LABELS[p]}
-              </button>
-            ))}
-          </div>
-        </FormField>
-
-        {/* Base URL */}
-        <FormField label="Base URL">
-          <input
-            type="text"
-            value={baseUrl}
-            onChange={(e) => setBaseUrl(e.target.value)}
-            placeholder="https://api.example.com"
-            className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+          <SettingsSelect
+            label="供应商类型"
+            value={provider}
+            onValueChange={handleProviderChange}
+            options={PROVIDER_SELECT_OPTIONS}
+            placeholder="选择供应商"
           />
-          {baseUrl.trim() && (
-            <p className="text-xs text-muted-foreground mt-1.5">
-              预览：{buildPreviewUrl(baseUrl, provider)}
-            </p>
-          )}
-        </FormField>
-
-        {/* API Key */}
-        <FormField label="API Key">
-          <div className="relative">
-            <input
-              type={showApiKey ? 'text' : 'password'}
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder={isEdit ? '留空则不更新' : '输入 API Key'}
-              className="w-full px-3 py-2 pr-10 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
-              required={!isEdit}
-            />
-            <button
-              type="button"
-              onClick={() => setShowApiKey(!showApiKey)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-        </FormField>
-
-        {/* 启用状态 */}
-        <FormField label="状态">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={enabled}
-              onChange={(e) => setEnabled(e.target.checked)}
-              className="w-4 h-4 rounded border-input accent-foreground"
-            />
-            <span className="text-sm text-foreground">启用此渠道</span>
-          </label>
-        </FormField>
-
-        {/* 模型列表 */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-foreground">模型列表</label>
-            <Button
-              variant="outline"
-              size="sm"
-              type="button"
-              onClick={handleFetchModels}
-              disabled={fetchingModels || !apiKey.trim() || !baseUrl.trim()}
-              className="h-7 text-xs"
-            >
-              {fetchingModels ? (
-                <Loader2 size={12} className="animate-spin" />
-              ) : (
-                <Download size={12} />
-              )}
-              <span>从供应商获取模型列表</span>
-            </Button>
-          </div>
-
-          {/* 拉取结果提示 */}
-          {fetchResult && (
-            <div className={cn(
-              'flex items-center gap-1.5 text-xs px-1',
-              fetchResult.success ? 'text-emerald-600' : 'text-destructive'
-            )}>
-              {fetchResult.success ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-              <span>{fetchResult.message}</span>
+          <SettingsInput
+            label="Base URL"
+            value={baseUrl}
+            onChange={setBaseUrl}
+            placeholder="https://api.example.com"
+            description={baseUrl.trim() ? `预览：${buildPreviewUrl(baseUrl, provider)}` : undefined}
+          />
+          {/* API Key + 测试连接同行 */}
+          <div className="px-4 py-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium text-foreground">API Key</div>
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={handleTest}
+                disabled={testing || !apiKey.trim() || !baseUrl.trim()}
+                className="h-7 text-xs"
+              >
+                {testing ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <Zap size={12} />
+                )}
+                <span>测试连接</span>
+              </Button>
             </div>
-          )}
+            <div className="relative">
+              <Input
+                type={showApiKey ? 'text' : 'password'}
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder={isEdit ? '留空则不更新' : '输入 API Key'}
+                required={!isEdit}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowApiKey(!showApiKey)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
+                tabIndex={-1}
+              >
+                {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            {testResult && (
+              <div className={cn(
+                'flex items-center gap-1.5 text-xs',
+                testResult.success ? 'text-emerald-600' : 'text-destructive'
+              )}>
+                {testResult.success ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
+                <span>{testResult.message}</span>
+              </div>
+            )}
+          </div>
+          <SettingsToggle
+            label="启用此渠道"
+            description="关闭后该渠道不会在模型选择中出现"
+            checked={enabled}
+            onCheckedChange={setEnabled}
+          />
+        </SettingsCard>
+      </SettingsSection>
 
-          <div className="space-y-2">
-            {/* 已有模型 */}
+      {/* 模型列表卡片 */}
+      <SettingsSection
+        title="模型列表"
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            type="button"
+            onClick={handleFetchModels}
+            disabled={fetchingModels || !apiKey.trim() || !baseUrl.trim()}
+            className="h-7 text-xs"
+          >
+            {fetchingModels ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : (
+              <Download size={12} />
+            )}
+            <span>从供应商获取</span>
+          </Button>
+        }
+      >
+        {/* 拉取结果提示 */}
+        {fetchResult && (
+          <div className={cn(
+            'flex items-center gap-1.5 text-xs px-1',
+            fetchResult.success ? 'text-emerald-600' : 'text-destructive'
+          )}>
+            {fetchResult.success ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
+            <span>{fetchResult.message}</span>
+          </div>
+        )}
+
+        <SettingsCard divided={false}>
+          <div className="divide-y divide-border/50">
+            {/* 已有模型列表 */}
             {models.map((model) => (
               <div
                 key={model.id}
-                className="flex items-center gap-2 px-3 py-2 rounded-md border border-input bg-background"
+                className="flex items-center gap-2 px-4 py-2.5"
               >
                 <input
                   type="checkbox"
@@ -397,13 +411,12 @@ export function ChannelForm({ channel, onSaved, onCancel }: ChannelFormProps): R
             ))}
 
             {/* 添加新模型 */}
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
+            <div className="flex items-center gap-2 px-4 py-2.5">
+              <Input
                 value={newModelId}
                 onChange={(e) => setNewModelId(e.target.value)}
                 placeholder="模型 ID（如 claude-opus-4-6）"
-                className="flex-1 px-3 py-1.5 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                className="flex-1 h-8 text-sm"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault()
@@ -411,12 +424,11 @@ export function ChannelForm({ channel, onSaved, onCancel }: ChannelFormProps): R
                   }
                 }}
               />
-              <input
-                type="text"
+              <Input
                 value={newModelName}
                 onChange={(e) => setNewModelName(e.target.value)}
                 placeholder="显示名称（可选）"
-                className="flex-1 px-3 py-1.5 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                className="flex-1 h-8 text-sm"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault()
@@ -430,75 +442,33 @@ export function ChannelForm({ channel, onSaved, onCancel }: ChannelFormProps): R
                 type="button"
                 onClick={handleAddModel}
                 disabled={!newModelId.trim()}
-                className="h-8 w-8"
+                className="h-8 w-8 flex-shrink-0"
               >
                 <Plus size={18} />
               </Button>
             </div>
           </div>
-        </div>
+        </SettingsCard>
+      </SettingsSection>
 
-        {/* 操作按钮 */}
-        <div className="flex items-center gap-3 pt-2">
-          <Button
-            type="submit"
-            disabled={saving || !name.trim() || (!isEdit && !apiKey.trim())}
-          >
-            {saving && <Loader2 size={14} className="animate-spin" />}
-            <span>{isEdit ? '保存修改' : '创建渠道'}</span>
-          </Button>
+      {/* 操作按钮 */}
+      <div className="flex items-center gap-3 pt-2">
+        <Button
+          type="submit"
+          disabled={saving || !name.trim() || (!isEdit && !apiKey.trim())}
+        >
+          {saving && <Loader2 size={14} className="animate-spin" />}
+          <span>{isEdit ? '保存修改' : '创建渠道'}</span>
+        </Button>
 
-          {/* 测试连接（直接使用表单当前凭证，无需先保存） */}
-          <Button
-            variant="outline"
-            type="button"
-            onClick={handleTest}
-            disabled={testing || !apiKey.trim() || !baseUrl.trim()}
-          >
-            {testing ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <Zap size={14} />
-            )}
-            <span>测试连接</span>
-          </Button>
-
-          <Button
-            variant="ghost"
-            type="button"
-            onClick={onCancel}
-          >
-            取消
-          </Button>
-
-          {/* 测试结果 */}
-          {testResult && (
-            <div className={cn(
-              'flex items-center gap-1.5 text-sm',
-              testResult.success ? 'text-emerald-600' : 'text-destructive'
-            )}>
-              {testResult.success ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
-              <span>{testResult.message}</span>
-            </div>
-          )}
-        </div>
-      </form>
-    </div>
-  )
-}
-
-// ===== 表单字段包装组件 =====
-
-interface FormFieldProps {
-  label: string
-  children: React.ReactNode
-}
-
-function FormField({ label, children }: FormFieldProps): React.ReactElement {
-  return (
-    <div className="space-y-1.5">
-      <label className="text-sm font-medium text-foreground">{label}</label>
-      {children}
-    </div>
+        <Button
+          variant="ghost"
+          type="button"
+          onClick={onCancel}
+        >
+          取消
+        </Button>
+      </div>
+    </form>
   )
 }

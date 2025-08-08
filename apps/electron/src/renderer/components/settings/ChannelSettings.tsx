@@ -8,8 +8,10 @@
 import * as React from 'react'
 import { Plus, Pencil, Trash2, Power, PowerOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import { PROVIDER_LABELS } from '@proma/shared'
 import type { Channel } from '@proma/shared'
+import { SettingsSection, SettingsCard, SettingsRow } from './primitives'
 import { ChannelForm } from './ChannelForm'
 
 /** 组件视图模式 */
@@ -75,35 +77,28 @@ export function ChannelSettings(): React.ReactElement {
 
   // 列表视图
   return (
-    <div className="space-y-4">
-      {/* 标题栏 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-medium text-foreground">渠道配置</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            管理 AI 供应商连接，配置 API Key 和可用模型
-          </p>
-        </div>
-        <button
-          onClick={() => setViewMode('create')}
-          className="flex items-center gap-2 px-3 py-2 rounded-md text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-        >
+    <SettingsSection
+      title="渠道配置"
+      description="管理 AI 供应商连接，配置 API Key 和可用模型"
+      action={
+        <Button size="sm" onClick={() => setViewMode('create')}>
           <Plus size={16} />
           <span>添加渠道</span>
-        </button>
-      </div>
-
-      {/* 渠道列表 */}
+        </Button>
+      }
+    >
       {loading ? (
         <div className="text-sm text-muted-foreground py-8 text-center">加载中...</div>
       ) : channels.length === 0 ? (
-        <div className="text-sm text-muted-foreground py-12 text-center border border-dashed border-border rounded-lg">
-          还没有配置任何渠道，点击上方"添加渠道"开始
-        </div>
+        <SettingsCard divided={false}>
+          <div className="text-sm text-muted-foreground py-12 text-center">
+            还没有配置任何渠道，点击上方"添加渠道"开始
+          </div>
+        </SettingsCard>
       ) : (
-        <div className="space-y-2">
+        <SettingsCard>
           {channels.map((channel) => (
-            <ChannelCard
+            <ChannelRow
               key={channel.id}
               channel={channel}
               onEdit={() => {
@@ -113,63 +108,62 @@ export function ChannelSettings(): React.ReactElement {
               onDelete={() => handleDelete(channel)}
             />
           ))}
-        </div>
+        </SettingsCard>
       )}
-    </div>
+    </SettingsSection>
   )
 }
 
-// ===== 渠道卡片子组件 =====
+// ===== 渠道行子组件 =====
 
-interface ChannelCardProps {
+interface ChannelRowProps {
   channel: Channel
   onEdit: () => void
   onDelete: () => void
 }
 
-function ChannelCard({ channel, onEdit, onDelete }: ChannelCardProps): React.ReactElement {
+function ChannelRow({ channel, onEdit, onDelete }: ChannelRowProps): React.ReactElement {
+  const enabledCount = channel.models.filter((m) => m.enabled).length
+  const description = [
+    PROVIDER_LABELS[channel.provider],
+    enabledCount > 0 ? `${enabledCount} 个模型已启用` : undefined,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
   return (
-    <div className="flex items-center justify-between p-4 rounded-lg border border-border/50 bg-card hover:bg-accent/30 transition-colors">
-      {/* 左侧信息 */}
-      <div className="flex items-center gap-3">
-        {/* 启用状态图标 */}
-        <div className={cn(
-          'flex-shrink-0',
-          channel.enabled ? 'text-emerald-500' : 'text-muted-foreground'
-        )}>
-          {channel.enabled ? <Power size={18} /> : <PowerOff size={18} />}
+    <SettingsRow
+      label={channel.name}
+      description={description}
+      className="group"
+    >
+      <div className="flex items-center gap-2">
+        {/* 启用状态标识 */}
+        <div
+          className={cn(
+            'flex-shrink-0',
+            channel.enabled ? 'text-emerald-500' : 'text-muted-foreground'
+          )}
+        >
+          {channel.enabled ? <Power size={16} /> : <PowerOff size={16} />}
         </div>
 
-        <div>
-          <div className="text-sm font-medium text-foreground">{channel.name}</div>
-          <div className="text-xs text-muted-foreground mt-0.5">
-            {PROVIDER_LABELS[channel.provider]}
-            {channel.models.length > 0 && (
-              <span className="ml-2">
-                {channel.models.filter((m) => m.enabled).length} 个模型已启用
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* 右侧操作 */}
-      <div className="flex items-center gap-1">
+        {/* 操作按钮 */}
         <button
           onClick={onEdit}
-          className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors opacity-0 group-hover:opacity-100"
           title="编辑"
         >
           <Pencil size={14} />
         </button>
         <button
           onClick={onDelete}
-          className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+          className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
           title="删除"
         >
           <Trash2 size={14} />
         </button>
       </div>
-    </div>
+    </SettingsRow>
   )
 }
