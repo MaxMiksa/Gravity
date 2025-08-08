@@ -1,28 +1,53 @@
 /**
  * SettingsPanel - 设置面板
  *
- * 左侧 tab 导航 + 右侧内容区域。
- * 首个 tab: "渠道配置"
+ * 左侧导航 + 右侧 ScrollArea 内容区域。
+ * 四个标签页：通用 / 渠道配置 / 外观 / 关于
+ * 使用 Jotai atom 管理当前标签页状态。
  */
 
 import * as React from 'react'
+import { useAtom } from 'jotai'
 import { cn } from '@/lib/utils'
-import { Radio } from 'lucide-react'
+import { Settings, Radio, Palette, Info } from 'lucide-react'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { settingsTabAtom } from '@/atoms/settings-tab'
+import type { SettingsTab } from '@/atoms/settings-tab'
 import { ChannelSettings } from './ChannelSettings'
+import { GeneralSettings } from './GeneralSettings'
+import { AppearanceSettings } from './AppearanceSettings'
+import { AboutSettings } from './AboutSettings'
 
 /** 设置 Tab 定义 */
-interface SettingsTab {
-  id: string
+interface TabItem {
+  id: SettingsTab
   label: string
   icon: React.ReactNode
 }
 
-const TABS: SettingsTab[] = [
+const TABS: TabItem[] = [
+  { id: 'general', label: '通用', icon: <Settings size={16} /> },
   { id: 'channels', label: '渠道配置', icon: <Radio size={16} /> },
+  { id: 'appearance', label: '外观', icon: <Palette size={16} /> },
+  { id: 'about', label: '关于', icon: <Info size={16} /> },
 ]
 
+/** 根据标签页 id 渲染对应内容 */
+function renderTabContent(tab: SettingsTab): React.ReactElement {
+  switch (tab) {
+    case 'general':
+      return <GeneralSettings />
+    case 'channels':
+      return <ChannelSettings />
+    case 'appearance':
+      return <AppearanceSettings />
+    case 'about':
+      return <AboutSettings />
+  }
+}
+
 export function SettingsPanel(): React.ReactElement {
-  const [activeTab, setActiveTab] = React.useState('channels')
+  const [activeTab, setActiveTab] = useAtom(settingsTabAtom)
 
   return (
     <div className="flex h-full">
@@ -51,9 +76,11 @@ export function SettingsPanel(): React.ReactElement {
       </div>
 
       {/* 右侧内容区域 */}
-      <div className="flex-1 overflow-y-auto pt-14 px-6 pb-6">
-        {activeTab === 'channels' && <ChannelSettings />}
-      </div>
+      <ScrollArea className="flex-1 pt-14">
+        <div className="max-w-3xl mx-auto px-6 pb-6">
+          {renderTabContent(activeTab)}
+        </div>
+      </ScrollArea>
     </div>
   )
 }
