@@ -21,6 +21,8 @@
     --destructive-foreground: 0 0% 98%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
   }
 
   .dark {
@@ -41,6 +43,8 @@
     --destructive-foreground: 0 0% 98%;
     --card: 0 0% 3.9%;
     --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
   }
 }
 
@@ -62,4 +66,29 @@
 .titlebar-no-drag {
   -webkit-app-region: no-drag;
   app-region: no-drag;
+}
+
+/* 细腻卡片阴影 */
+.shadow-minimal {
+  box-shadow:
+    0 1px 2px 0 rgb(0 0 0 / 0.03),
+    0 1px 3px 0 rgb(0 0 0 / 0.06);
+}
+
+/* 滚动区域上下渐隐遮罩 */
+.mask-fade-y {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 3%,
+    black 97%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 3%,
+    black 97%,
+    transparent 100%
+  );
 }
