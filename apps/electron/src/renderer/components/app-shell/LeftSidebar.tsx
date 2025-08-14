@@ -83,13 +83,13 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
       {/* 导航菜单 */}
       <div className="flex-1 flex flex-col gap-1 pt-3 pb-3 px-3">
         <SidebarItem
-          icon={<Pin size={12} />}
+          icon={<Pin size={14} />}
           label="置顶对话"
           active={activeItem === 'pinned'}
           onClick={() => handleItemClick('pinned')}
         />
         <SidebarItem
-          icon={<MessagesSquare size={12} />}
+          icon={<MessagesSquare size={14} />}
           label="对话列表"
           active={activeItem === 'all-chats'}
           onClick={() => handleItemClick('all-chats')}
