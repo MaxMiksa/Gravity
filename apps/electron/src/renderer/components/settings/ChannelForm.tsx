@@ -257,14 +257,32 @@ export function ChannelForm({ channel, onSaved, onCancel }: ChannelFormProps): R
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* 标题栏 */}
+      {/* 标题栏 + 操作按钮 */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" className="h-8 w-8" type="button" onClick={onCancel}>
           <ArrowLeft size={18} />
         </Button>
-        <h3 className="text-lg font-medium text-foreground">
+        <h3 className="text-lg font-medium text-foreground flex-1">
           {isEdit ? '编辑渠道' : '添加渠道'}
         </h3>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            type="button"
+            onClick={onCancel}
+          >
+            取消
+          </Button>
+          <Button
+            size="sm"
+            type="submit"
+            disabled={saving || !name.trim() || (!isEdit && !apiKey.trim())}
+          >
+            {saving && <Loader2 size={14} className="animate-spin" />}
+            <span>{isEdit ? '保存修改' : '创建渠道'}</span>
+          </Button>
+        </div>
       </div>
 
       {/* 基本信息卡片 */}
@@ -450,25 +468,6 @@ export function ChannelForm({ channel, onSaved, onCancel }: ChannelFormProps): R
           </div>
         </SettingsCard>
       </SettingsSection>
-
-      {/* 操作按钮 */}
-      <div className="flex items-center gap-3 pt-2">
-        <Button
-          type="submit"
-          disabled={saving || !name.trim() || (!isEdit && !apiKey.trim())}
-        >
-          {saving && <Loader2 size={14} className="animate-spin" />}
-          <span>{isEdit ? '保存修改' : '创建渠道'}</span>
-        </Button>
-
-        <Button
-          variant="ghost"
-          type="button"
-          onClick={onCancel}
-        >
-          取消
-        </Button>
-      </div>
     </form>
   )
 }
