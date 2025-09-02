@@ -4,7 +4,8 @@
     "composite": true,
     "rootDir": "./src",
     "outDir": "./dist",
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"]
   },
   "include": ["src/**/*"]
 }
