@@ -1,6 +1,5 @@
 /**
- * @proma/ui - Shared UI components
+ * @proma/ui - 共享 UI 组件
  */
 
-// Placeholder - components will be added as needed
-export {}
+export { CodeBlock } from './code-block/index.ts'
