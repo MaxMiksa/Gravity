@@ -3,6 +3,11 @@
  *
  * 提供懒加载的 Shiki 高亮器单例，支持按需加载语言。
  * 纯逻辑层，不依赖 React。
+ *
+ * 三套 API：
+ * - highlightCode()      异步 HTML，首次初始化 + 按需加载语言
+ * - highlightCodeSync()  同步 HTML，初始化完成后零延迟
+ * - highlightToTokens()  同步 token 结构，适合逐行 React 渲染（流式最优）
  */
 
 import { createHighlighter, bundledLanguages } from 'shiki'
@@ -55,7 +60,7 @@ export interface HighlightOptions {
   theme?: string
 }
 
-/** 高亮结果 */
+/** 高亮结果（HTML 字符串） */
 export interface HighlightResult {
   /** Shiki 渲染的 HTML 字符串 */
   html: string
@@ -63,21 +68,67 @@ export interface HighlightResult {
   language: string
 }
 
+/** 单个高亮 token */
+export interface HighlightToken {
+  /** 文本内容 */
+  content: string
+  /** CSS 颜色值 */
+  color?: string
+}
+
+/** 按行组织的 token 高亮结果（适合 React 逐行渲染） */
+export interface HighlightTokensResult {
+  /** 每行的 token 列表 */
+  lines: HighlightToken[][]
+  /** 代码区域背景色 */
+  bgColor: string
+  /** 代码区域前景色 */
+  fgColor: string
+  /** 实际使用的语言 */
+  language: string
+}
+
 /** 单例高亮器 Promise */
 let highlighterPromise: Promise<ShikiHighlighter> | null = null
 
+/** 已 resolve 的高亮器实例缓存（同步访问用） */
+let cachedHighlighter: ShikiHighlighter | null = null
+
 /**
  * 获取或创建 Shiki 高亮器单例
- * 首次调用时懒加载，后续复用同一实例
+ * 首次调用时懒加载，resolve 后缓存实例供同步使用
  */
 function getHighlighter(): Promise<ShikiHighlighter> {
   if (!highlighterPromise) {
     highlighterPromise = createHighlighter({
       themes: DEFAULT_THEMES,
       langs: DEFAULT_LANGS,
+    }).then((hl) => {
+      cachedHighlighter = hl
+      return hl
     })
   }
   return highlighterPromise
+}
+
+/**
+ * 解析语言别名，返回有效的 Shiki 语言标识
+ * 未知语言返回 'text'
+ */
+function resolveLanguage(lang: string): string {
+  const normalized = lang.toLowerCase().trim()
+  const resolved = LANGUAGE_ALIASES[normalized] ?? normalized
+
+  if (resolved === 'text') return 'text'
+  if (resolved in bundledLanguages) return resolved
+  return 'text'
+}
+
+/** 解析已加载的语言，未加载的 fallback 到 text */
+function resolveLoadedLanguage(highlighter: ShikiHighlighter, lang: string): string {
+  const resolved = resolveLanguage(lang)
+  if (resolved === 'text') return 'text'
+  return highlighter.getLoadedLanguages().includes(resolved) ? resolved : 'text'
 }
 
 /**
@@ -85,19 +136,11 @@ function getHighlighter(): Promise<ShikiHighlighter> {
  * 未知语言自动 fallback 到 'text'
  */
 async function resolveAndLoadLanguage(highlighter: ShikiHighlighter, lang: string): Promise<string> {
-  const normalized = lang.toLowerCase().trim()
-  const resolved = LANGUAGE_ALIASES[normalized] ?? normalized
+  const resolved = resolveLanguage(lang)
 
-  // 'text' 是通用 fallback，无需加载
   if (resolved === 'text') return 'text'
-
-  // 不是 Shiki 已知语言 → fallback
-  if (!(resolved in bundledLanguages)) return 'text'
-
-  // 已加载过则直接返回
   if (highlighter.getLoadedLanguages().includes(resolved)) return resolved
 
-  // 按需动态加载
   try {
     await highlighter.loadLanguage(resolved as BundledLanguage)
     return resolved
@@ -108,14 +151,7 @@ async function resolveAndLoadLanguage(highlighter: ShikiHighlighter, lang: strin
 }
 
 /**
- * 高亮代码，返回 HTML 字符串
- *
- * @example
- * const result = await highlightCode({
- *   code: 'const a = 1',
- *   language: 'typescript',
- * })
- * // result.html → '<pre class="shiki ...">...</pre>'
+ * 异步高亮代码，返回 HTML 字符串（首次初始化 + 按需加载语言时使用）
  */
 export async function highlightCode(options: HighlightOptions): Promise<HighlightResult> {
   const { code, language, theme = 'github-dark' } = options
@@ -129,4 +165,51 @@ export async function highlightCode(options: HighlightOptions): Promise<Highligh
   })
 
   return { html, language: resolvedLang }
+}
+
+/**
+ * 同步高亮代码，返回 HTML 字符串
+ * 返回 null 表示高亮器尚未初始化
+ */
+export function highlightCodeSync(options: HighlightOptions): HighlightResult | null {
+  if (!cachedHighlighter) return null
+
+  const { code, language, theme = 'github-dark' } = options
+  const lang = resolveLoadedLanguage(cachedHighlighter, language)
+
+  const html = cachedHighlighter.codeToHtml(code, {
+    lang: lang as BundledLanguage,
+    theme: theme as BundledTheme,
+  })
+
+  return { html, language: lang }
+}
+
+/**
+ * 同步高亮代码，返回按行 token 结构（适合 React 逐行渲染，流式最优）
+ *
+ * 相比 highlightCodeSync 返回 HTML 字符串：
+ * - 返回结构化 token 数据，由调用方渲染为 React 元素
+ * - 配合稳定 key 实现增量 DOM 更新，流式输出只更新变化的行
+ * - 返回 null 表示高亮器尚未初始化
+ */
+export function highlightToTokens(options: HighlightOptions): HighlightTokensResult | null {
+  if (!cachedHighlighter) return null
+
+  const { code, language, theme = 'github-dark' } = options
+  const lang = resolveLoadedLanguage(cachedHighlighter, language)
+
+  const result = cachedHighlighter.codeToTokens(code, {
+    lang: lang as BundledLanguage,
+    theme: theme as BundledTheme,
+  })
+
+  return {
+    lines: result.tokens.map((line) =>
+      line.map((token) => ({ content: token.content, color: token.color }))
+    ),
+    bgColor: result.bg ?? '#24292e',
+    fgColor: result.fg ?? '#e1e4e8',
+    language: lang,
+  }
 }
