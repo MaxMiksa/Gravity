@@ -2,18 +2,18 @@
  * AppearanceSettings - 外观设置页
  *
  * 主题切换（浅色/深色/跟随系统），使用 SettingsSegmentedControl。
- * 当前为占位实现，后续可扩展自定义主题。
+ * 通过 Jotai atom 管理状态，持久化到 ~/.proma/settings.json。
  */
 
 import * as React from 'react'
+import { useAtom } from 'jotai'
 import {
   SettingsSection,
   SettingsCard,
   SettingsSegmentedControl,
 } from './primitives'
-
-/** 主题模式类型 */
-type ThemeMode = 'light' | 'dark' | 'system'
+import { themeModeAtom, updateThemeMode } from '@/atoms/theme'
+import type { ThemeMode } from '../../../types'
 
 /** 主题选项 */
 const THEME_OPTIONS = [
@@ -23,7 +23,14 @@ const THEME_OPTIONS = [
 ]
 
 export function AppearanceSettings(): React.ReactElement {
-  const [theme, setTheme] = React.useState<ThemeMode>('light')
+  const [themeMode, setThemeMode] = useAtom(themeModeAtom)
+
+  /** 切换主题模式 */
+  const handleThemeChange = React.useCallback((value: string) => {
+    const mode = value as ThemeMode
+    setThemeMode(mode)
+    updateThemeMode(mode)
+  }, [setThemeMode])
 
   return (
     <SettingsSection
@@ -34,8 +41,8 @@ export function AppearanceSettings(): React.ReactElement {
         <SettingsSegmentedControl
           label="主题模式"
           description="选择应用的配色方案"
-          value={theme}
-          onValueChange={(v) => setTheme(v as ThemeMode)}
+          value={themeMode}
+          onValueChange={handleThemeChange}
           options={THEME_OPTIONS}
         />
       </SettingsCard>
