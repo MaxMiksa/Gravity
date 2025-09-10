@@ -1,0 +1,308 @@
+/**
+ * ModelSelector - 模型选择器（Dialog + Command 搜索）
+ *
+ * 现代化设计：
+ * - 大尺寸 Dialog，宽敞易读
+ * - 按渠道分组，灰色背景供应商标题行
+ * - 选中项左侧绿色竖条高亮
+ * - 触发按钮：模型 logo + 模型名 + Chevron
+ */
+
+import * as React from 'react'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { ChevronDown, Cpu, Search } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  selectedModelAtom,
+  currentConversationIdAtom,
+  conversationsAtom,
+} from '@/atoms/chat-atoms'
+import { getModelLogo, getProviderLogo } from '@/lib/model-logo'
+import { cn } from '@/lib/utils'
+import type { Channel, ModelOption } from '@proma/shared'
+
+/** 从渠道列表构建扁平化的模型选项 */
+function buildModelOptions(channels: Channel[]): ModelOption[] {
+  const options: ModelOption[] = []
+
+  for (const channel of channels) {
+    if (!channel.enabled) continue
+
+    for (const model of channel.models) {
+      if (!model.enabled) continue
+
+      options.push({
+        channelId: channel.id,
+        channelName: channel.name,
+        modelId: model.id,
+        modelName: model.name,
+        provider: channel.provider,
+      })
+    }
+  }
+
+  return options
+}
+
+/** 按渠道分组模型选项 */
+function groupByChannel(options: ModelOption[]): Map<string, ModelOption[]> {
+  const groups = new Map<string, ModelOption[]>()
+
+  for (const option of options) {
+    const key = option.channelId
+    const group = groups.get(key) ?? []
+    group.push(option)
+    groups.set(key, group)
+  }
+
+  return groups
+}
+
+export function ModelSelector(): React.ReactElement {
+  const [selectedModel, setSelectedModel] = useAtom(selectedModelAtom)
+  const currentConversationId = useAtomValue(currentConversationIdAtom)
+  const setConversations = useSetAtom(conversationsAtom)
+  const [channels, setChannels] = React.useState<Channel[]>([])
+  const [open, setOpen] = React.useState(false)
+  const [search, setSearch] = React.useState('')
+
+  // 加载渠道列表
+  React.useEffect(() => {
+    window.electronAPI.listChannels().then(setChannels).catch(console.error)
+  }, [])
+
+  // 每次打开时刷新，重置搜索
+  React.useEffect(() => {
+    if (open) {
+      window.electronAPI.listChannels().then(setChannels).catch(console.error)
+      setSearch('')
+    }
+  }, [open])
+
+  const modelOptions = React.useMemo(() => buildModelOptions(channels), [channels])
+  const grouped = React.useMemo(() => groupByChannel(modelOptions), [modelOptions])
+
+  // 搜索过滤
+  const filteredGrouped = React.useMemo(() => {
+    if (!search.trim()) return grouped
+
+    const query = search.toLowerCase()
+    const filtered = new Map<string, ModelOption[]>()
+
+    for (const [channelId, options] of grouped.entries()) {
+      const matchedOptions = options.filter(
+        (o) =>
+          o.modelName.toLowerCase().includes(query) ||
+          o.channelName.toLowerCase().includes(query)
+      )
+      if (matchedOptions.length > 0) {
+        filtered.set(channelId, matchedOptions)
+      }
+    }
+
+    return filtered
+  }, [grouped, search])
+
+  // 扁平化过滤后的模型列表，用于键盘导航
+  const flatOptions = React.useMemo(() => {
+    const result: ModelOption[] = []
+    for (const options of filteredGrouped.values()) {
+      result.push(...options)
+    }
+    return result
+  }, [filteredGrouped])
+
+  // 键盘高亮索引
+  const [highlightIndex, setHighlightIndex] = React.useState(-1)
+  const itemRefs = React.useRef<Map<number, HTMLButtonElement>>(new Map())
+
+  // 搜索变化时重置高亮
+  React.useEffect(() => {
+    setHighlightIndex(-1)
+  }, [search])
+
+  // 高亮项变化时滚动到可见区域
+  React.useEffect(() => {
+    if (highlightIndex < 0) return
+    const el = itemRefs.current.get(highlightIndex)
+    el?.scrollIntoView({ block: 'nearest' })
+  }, [highlightIndex])
+
+  // 查找当前选中的模型信息
+  const currentModelInfo = React.useMemo(() => {
+    if (!selectedModel) return null
+    return modelOptions.find(
+      (o) => o.channelId === selectedModel.channelId && o.modelId === selectedModel.modelId
+    ) ?? null
+  }, [selectedModel, modelOptions])
+
+  /** 选择模型并持久化到当前对话 */
+  const handleSelect = (option: ModelOption): void => {
+    setSelectedModel({ channelId: option.channelId, modelId: option.modelId })
+    setOpen(false)
+
+    // 将模型/渠道选择保存到当前对话元数据
+    if (currentConversationId) {
+      window.electronAPI
+        .updateConversationModel(currentConversationId, option.modelId, option.channelId)
+        .then((updated) => {
+          setConversations((prev) =>
+            prev.map((c) => (c.id === updated.id ? updated : c))
+          )
+        })
+        .catch(console.error)
+    }
+  }
+
+  /** 搜索框键盘导航 */
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+    if (flatOptions.length === 0) return
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setHighlightIndex((prev) => (prev < flatOptions.length - 1 ? prev + 1 : 0))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setHighlightIndex((prev) => (prev > 0 ? prev - 1 : flatOptions.length - 1))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      const target = flatOptions[highlightIndex >= 0 ? highlightIndex : 0]
+      if (target) handleSelect(target)
+    }
+  }
+
+  if (modelOptions.length === 0) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground px-2 py-1">
+        <Cpu className="size-3.5" />
+        <span>暂无可用模型</span>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      {/* 触发按钮 */}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+      >
+        {currentModelInfo ? (
+          <img
+            src={getModelLogo(currentModelInfo.modelId, currentModelInfo.provider)}
+            alt={currentModelInfo.modelName}
+            className="size-4 rounded-full object-cover"
+          />
+        ) : (
+          <Cpu className="size-3.5" />
+        )}
+        <span className="max-w-[200px] truncate">
+          {currentModelInfo ? currentModelInfo.modelName : '选择模型'}
+        </span>
+        <ChevronDown className="size-3" />
+      </button>
+
+      {/* 模型选择 Dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="p-0 gap-0 max-w-lg">
+          <DialogHeader className="sr-only">
+            <DialogTitle>选择模型</DialogTitle>
+          </DialogHeader>
+
+          {/* 搜索栏 */}
+          <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border/60">
+            <Search className="size-5 text-muted-foreground/60 flex-shrink-0" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              placeholder="搜索模型..."
+              className="flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground/50"
+              autoFocus
+            />
+          </div>
+
+          {/* 模型列表 */}
+          <div className="max-h-[420px] overflow-y-auto">
+            {filteredGrouped.size === 0 ? (
+              <div className="py-10 text-center text-sm text-muted-foreground">
+                未找到模型
+              </div>
+            ) : (
+              (() => {
+                let flatIndex = 0
+                return Array.from(filteredGrouped.entries()).map(([channelId, options]) => {
+                const first = options[0]
+                if (!first) return null
+
+                return (
+                  <div key={channelId}>
+                    {/* 供应商标题行 - 灰色背景 */}
+                    <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 border-b border-border/30">
+                      <img
+                        src={getProviderLogo(first.provider)}
+                        alt={first.channelName}
+                        className="size-4 rounded-full object-cover"
+                      />
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {first.channelName}
+                      </span>
+                    </div>
+
+                    {/* 该渠道下的模型列表 */}
+                    {options.map((option) => {
+                      const isSelected =
+                        selectedModel?.channelId === option.channelId &&
+                        selectedModel?.modelId === option.modelId
+                      const currentFlatIndex = flatIndex++
+                      const isHighlighted = currentFlatIndex === highlightIndex
+
+                      return (
+                        <button
+                          key={`${option.channelId}:${option.modelId}`}
+                          ref={(el) => {
+                            if (el) itemRefs.current.set(currentFlatIndex, el)
+                            else itemRefs.current.delete(currentFlatIndex)
+                          }}
+                          type="button"
+                          onClick={() => handleSelect(option)}
+                          onMouseEnter={() => setHighlightIndex(currentFlatIndex)}
+                          className={cn(
+                            'flex items-center gap-3 w-[calc(100%-1rem)] px-4 py-1.5 mx-2 rounded-lg text-left transition-colors',
+                            'hover:bg-accent',
+                            isHighlighted && 'bg-accent',
+                            isSelected && 'bg-accent/30 border-l-3 border-l-primary'
+                          )}
+                        >
+                          <img
+                            src={getModelLogo(option.modelId, option.provider)}
+                            alt={option.modelName}
+                            className="size-4 rounded-full object-cover flex-shrink-0"
+                          />
+                          <span className={cn(
+                            'flex-1 text-sm truncate',
+                            isSelected ? 'font-medium text-foreground' : 'text-foreground/80'
+                          )}>
+                            {option.modelName}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )
+              })
+              })()
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
