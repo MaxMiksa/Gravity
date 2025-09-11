@@ -36,3 +36,104 @@ export function getConfigDir(): string {
 export function getChannelsPath(): string {
   return join(getConfigDir(), 'channels.json')
 }
+
+/**
+ * 获取对话索引文件路径
+ *
+ * @returns ~/.proma/conversations.json
+ */
+export function getConversationsIndexPath(): string {
+  return join(getConfigDir(), 'conversations.json')
+}
+
+/**
+ * 获取对话消息目录路径
+ *
+ * 如果目录不存在则自动创建。
+ *
+ * @returns ~/.proma/conversations/
+ */
+export function getConversationsDir(): string {
+  const dir = join(getConfigDir(), 'conversations')
+
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true })
+    console.log(`[配置] 已创建对话目录: ${dir}`)
+  }
+
+  return dir
+}
+
+/**
+ * 获取指定对话的消息文件路径
+ *
+ * @param id 对话 ID
+ * @returns ~/.proma/conversations/{id}.jsonl
+ */
+export function getConversationMessagesPath(id: string): string {
+  return join(getConversationsDir(), `${id}.jsonl`)
+}
+
+/**
+ * 获取附件存储根目录
+ *
+ * 如果目录不存在则自动创建。
+ *
+ * @returns ~/.proma/attachments/
+ */
+export function getAttachmentsDir(): string {
+  const dir = join(getConfigDir(), 'attachments')
+
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true })
+    console.log(`[配置] 已创建附件目录: ${dir}`)
+  }
+
+  return dir
+}
+
+/**
+ * 获取指定对话的附件目录
+ *
+ * 如果目录不存在则自动创建。
+ *
+ * @param conversationId 对话 ID
+ * @returns ~/.proma/attachments/{conversationId}/
+ */
+export function getConversationAttachmentsDir(conversationId: string): string {
+  const dir = join(getAttachmentsDir(), conversationId)
+
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true })
+  }
+
+  return dir
+}
+
+/**
+ * 解析附件相对路径为完整路径
+ *
+ * @param localPath 相对路径 {conversationId}/{uuid}.ext
+ * @returns 完整路径 ~/.proma/attachments/{conversationId}/{uuid}.ext
+ */
+export function resolveAttachmentPath(localPath: string): string {
+  return join(getAttachmentsDir(), localPath)
+}
+
+/**
+ * 获取应用设置文件路径
+ *
+ * @returns ~/.proma/settings.json
+ */
+export function getSettingsPath(): string {
+  return join(getConfigDir(), 'settings.json')
+}
+
+/**
+ * 获取用户档案文件路径
+ *
+ * @returns ~/.proma/user-profile.json
+ */
+export function getUserProfilePath(): string {
+  return join(getConfigDir(), 'user-profile.json')
+}
