@@ -4,15 +4,33 @@
  * 包含：
  * - Chat/Agent 模式切换器
  * - 导航菜单项（点击切换主内容区视图）
+ * - 对话列表（新对话按钮 + 按 updatedAt 降序排列）
  */
 
 import * as React from 'react'
-import { useAtom } from 'jotai'
-import { MessagesSquare, Pin, Settings } from 'lucide-react'
+import { useAtom, useSetAtom, useAtomValue } from 'jotai'
+import { MessagesSquare, Pin, Settings, Plus, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ModeSwitcher } from './ModeSwitcher'
 import { activeViewAtom } from '@/atoms/active-view'
+import {
+  conversationsAtom,
+  currentConversationIdAtom,
+  selectedModelAtom,
+} from '@/atoms/chat-atoms'
+import { userProfileAtom } from '@/atoms/user-profile'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import type { ActiveView } from '@/atoms/active-view'
+import type { ConversationMeta } from '@proma/shared'
 
 interface SidebarItemProps {
   icon: React.ReactNode
@@ -26,20 +44,21 @@ function SidebarItem({ icon, label, active, onClick }: SidebarItemProps): React.
     <button
       onClick={onClick}
       className={cn(
-        'w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors titlebar-no-drag',
+        'w-full flex items-center gap-3 px-3 py-2 rounded-[10px] text-[13px] transition-colors duration-100 titlebar-no-drag',
         active
-          ? 'bg-muted text-foreground'
-          : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+          ? 'bg-foreground/[0.08] dark:bg-foreground/[0.08] text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
+          : 'text-foreground/60 hover:bg-foreground/[0.04] dark:hover:bg-foreground/[0.04] hover:text-foreground'
       )}
     >
-      <span className="flex-shrink-0 w-4 h-4">{icon}</span>
+      <span className="flex-shrink-0 w-[18px] h-[18px]">{icon}</span>
       <span>{label}</span>
     </button>
   )
 }
 
 export interface LeftSidebarProps {
-  width: number
+  /** 可选固定宽度，默认使用 CSS 响应式宽度 */
+  width?: number
 }
 
 /** 侧边栏导航项标识 */
@@ -52,9 +71,46 @@ const ITEM_TO_VIEW: Record<SidebarItemId, ActiveView> = {
   settings: 'settings',
 }
 
+/**
+ * 格式化日期（简短显示）
+ */
+function formatDate(timestamp: number): string {
+  const date = new Date(timestamp)
+  const now = new Date()
+  const isToday =
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear()
+
+  if (isToday) {
+    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  }
+
+  return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+}
+
 export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
   const [activeView, setActiveView] = useAtom(activeViewAtom)
   const [activeItem, setActiveItem] = React.useState<SidebarItemId>('all-chats')
+  const [conversations, setConversations] = useAtom(conversationsAtom)
+  const [currentConversationId, setCurrentConversationId] = useAtom(currentConversationIdAtom)
+  const [hoveredId, setHoveredId] = React.useState<string | null>(null)
+  /** 待删除对话 ID，非空时显示确认弹窗 */
+  const [pendingDeleteId, setPendingDeleteId] = React.useState<string | null>(null)
+  const setUserProfile = useSetAtom(userProfileAtom)
+  const selectedModel = useAtomValue(selectedModelAtom)
+
+  // 初始加载对话列表 + 用户档案
+  React.useEffect(() => {
+    window.electronAPI
+      .listConversations()
+      .then(setConversations)
+      .catch(console.error)
+    window.electronAPI
+      .getUserProfile()
+      .then(setUserProfile)
+      .catch(console.error)
+  }, [setConversations, setUserProfile])
 
   /** 处理导航项点击 */
   const handleItemClick = (item: SidebarItemId): void => {
@@ -69,42 +125,202 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
     }
   }, [activeView, activeItem])
 
+  /** 创建新对话（继承当前选中的模型/渠道） */
+  const handleNewConversation = async (): Promise<void> => {
+    try {
+      const meta = await window.electronAPI.createConversation(
+        undefined,
+        selectedModel?.modelId,
+        selectedModel?.channelId,
+      )
+      setConversations((prev) => [meta, ...prev])
+      setCurrentConversationId(meta.id)
+      // 确保在对话视图
+      setActiveView('conversations')
+      setActiveItem('all-chats')
+    } catch (error) {
+      console.error('[侧边栏] 创建对话失败:', error)
+    }
+  }
+
+  /** 选择对话 */
+  const handleSelectConversation = (id: string): void => {
+    setCurrentConversationId(id)
+    setActiveView('conversations')
+    setActiveItem('all-chats')
+  }
+
+  /** 请求删除对话（弹出确认框） */
+  const handleRequestDelete = (e: React.MouseEvent, id: string): void => {
+    e.stopPropagation()
+    setPendingDeleteId(id)
+  }
+
+  /** 确认删除对话 */
+  const handleConfirmDelete = async (): Promise<void> => {
+    if (!pendingDeleteId) return
+    try {
+      await window.electronAPI.deleteConversation(pendingDeleteId)
+      setConversations((prev) => prev.filter((c) => c.id !== pendingDeleteId))
+      if (currentConversationId === pendingDeleteId) {
+        setCurrentConversationId(null)
+      }
+    } catch (error) {
+      console.error('[侧边栏] 删除对话失败:', error)
+    } finally {
+      setPendingDeleteId(null)
+    }
+  }
+
   return (
     <div
       className="h-full flex flex-col bg-background"
-      style={{ width }}
+      style={{ width: width ?? 280, minWidth: 180, flexShrink: 1 }}
     >
       {/* 顶部留空，避开 macOS 红绿灯 */}
       <div className="pt-[50px]">
         {/* 模式切换器 */}
         <ModeSwitcher />
       </div>
+      
+      {/* 新对话按钮 */}
+      <div className="px-3 pt-3">
+        <button
+          onClick={handleNewConversation}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-[10px] text-[13px] font-medium text-foreground/70 bg-foreground/[0.04] hover:bg-foreground/[0.08] transition-colors duration-100 titlebar-no-drag border border-dashed border-foreground/10 hover:border-foreground/20"
+        >
+          <Plus size={14} />
+          <span>新对话</span>
+        </button>
+      </div>
 
       {/* 导航菜单 */}
-      <div className="flex-1 flex flex-col gap-1 pt-3 pb-3 px-3">
+      <div className="flex flex-col gap-1 pt-3 px-3">
         <SidebarItem
-          icon={<Pin size={14} />}
+          icon={<Pin size={16} />}
           label="置顶对话"
           active={activeItem === 'pinned'}
           onClick={() => handleItemClick('pinned')}
         />
         <SidebarItem
-          icon={<MessagesSquare size={14} />}
+          icon={<MessagesSquare size={16} />}
           label="对话列表"
           active={activeItem === 'all-chats'}
           onClick={() => handleItemClick('all-chats')}
         />
+      </div>
 
-        {/* 弹性空间 */}
-        <div className="flex-1" />
 
+      {/* 对话列表 */}
+      <div className="flex-1 overflow-y-auto px-3 pt-2 pb-3">
+        <div className="flex flex-col gap-0.5">
+          {conversations.map((conv) => (
+            <ConversationItem
+              key={conv.id}
+              conversation={conv}
+              active={conv.id === currentConversationId}
+              hovered={conv.id === hoveredId}
+              onSelect={() => handleSelectConversation(conv.id)}
+              onDelete={(e) => handleRequestDelete(e, conv.id)}
+              onMouseEnter={() => setHoveredId(conv.id)}
+              onMouseLeave={() => setHoveredId(null)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* 底部设置 */}
+      <div className="px-3 pb-3">
         <SidebarItem
-          icon={<Settings size={16} />}
+          icon={<Settings size={18} />}
           label="设置"
           active={activeItem === 'settings'}
           onClick={() => handleItemClick('settings')}
         />
       </div>
+
+      {/* 删除确认弹窗 */}
+      <AlertDialog
+        open={pendingDeleteId !== null}
+        onOpenChange={(open) => { if (!open) setPendingDeleteId(null) }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除对话</AlertDialogTitle>
+            <AlertDialogDescription>
+              删除后将无法恢复，确定要删除这个对话吗？
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+  )
+}
+
+// ===== 对话列表项 =====
+
+interface ConversationItemProps {
+  conversation: ConversationMeta
+  active: boolean
+  hovered: boolean
+  onSelect: () => void
+  onDelete: (e: React.MouseEvent) => void
+  onMouseEnter: () => void
+  onMouseLeave: () => void
+}
+
+function ConversationItem({
+  conversation,
+  active,
+  hovered,
+  onSelect,
+  onDelete,
+  onMouseEnter,
+  onMouseLeave,
+}: ConversationItemProps): React.ReactElement {
+  return (
+    <button
+      onClick={onSelect}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      className={cn(
+        'w-full flex items-center gap-2 px-3 py-[7px] rounded-[10px] transition-colors duration-100 titlebar-no-drag text-left',
+        active
+          ? 'bg-foreground/[0.08] dark:bg-foreground/[0.08] shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
+          : 'hover:bg-foreground/[0.04] dark:hover:bg-foreground/[0.04]'
+      )}
+    >
+      <div className="flex-1 min-w-0">
+        <div className={cn(
+          'truncate text-[13px] leading-5',
+          active ? 'text-foreground' : 'text-foreground/80'
+        )}>
+          {conversation.title}
+        </div>
+        <div className="text-[11px] text-foreground/40 mt-0.5">
+          {formatDate(conversation.updatedAt)}
+        </div>
+      </div>
+
+      {/* 删除按钮（hover 时显示） */}
+      {hovered && (
+        <button
+          onClick={onDelete}
+          className="flex-shrink-0 p-1 rounded-md text-foreground/30 hover:bg-destructive/10 hover:text-destructive transition-colors duration-100"
+          title="删除对话"
+        >
+          <Trash2 size={13} />
+        </button>
+      )}
+    </button>
   )
 }
