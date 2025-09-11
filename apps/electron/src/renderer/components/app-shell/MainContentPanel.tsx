@@ -11,7 +11,7 @@ import { useAtomValue } from 'jotai'
 import { appModeAtom } from '@/atoms/app-mode'
 import { activeViewAtom } from '@/atoms/active-view'
 import { Panel } from './Panel'
-import { ChatPlaceholder } from '@/components/chat'
+import { ChatView } from '@/components/chat'
 import { AgentPlaceholder } from '@/components/agent'
 import { SettingsPanel } from '@/components/settings'
 
@@ -21,7 +21,7 @@ export function MainContentPanel(): React.ReactElement {
 
   /** 渲染对话视图内容 */
   const renderConversations = (): React.ReactElement => {
-    return mode === 'chat' ? <ChatPlaceholder /> : <AgentPlaceholder />
+    return mode === 'chat' ? <ChatView /> : <AgentPlaceholder />
   }
 
   return (
