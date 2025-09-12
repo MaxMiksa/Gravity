@@ -27,7 +27,7 @@ interface TabItem {
 
 const TABS: TabItem[] = [
   { id: 'general', label: '通用', icon: <Settings size={16} /> },
-  { id: 'channels', label: '渠道配置', icon: <Radio size={16} /> },
+  { id: 'channels', label: '渠道', icon: <Radio size={16} /> },
   { id: 'appearance', label: '外观', icon: <Palette size={16} /> },
   { id: 'about', label: '关于', icon: <Info size={16} /> },
 ]
@@ -77,7 +77,7 @@ export function SettingsPanel(): React.ReactElement {
 
       {/* 右侧内容区域 */}
       <ScrollArea className="flex-1 pt-14">
-        <div className="max-w-3xl mx-auto px-6 pb-6">
+        <div className="px-6 pb-6">
           {renderTabContent(activeTab)}
         </div>
       </ScrollArea>
