@@ -37,7 +37,7 @@
     --primary-foreground: 0 0% 9%;
     --secondary: 0 0% 14.9%;
     --secondary-foreground: 0 0% 98%;
-    --accent: 0 0% 14.9%;
+    --accent: 0 0% 40%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
@@ -75,6 +75,17 @@
     0 1px 3px 0 rgb(0 0 0 / 0.06);
 }
 
+/* 隐藏滚动条但保留滚动功能 */
+.scrollbar-none,
+.scrollbar-none > * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar,
+.scrollbar-none > *::-webkit-scrollbar {
+  display: none;
+}
+
 /* 滚动区域上下渐隐遮罩 */
 .mask-fade-y {
   mask-image: linear-gradient(
@@ -91,4 +102,26 @@
     black 97%,
     transparent 100%
   );
+}
+
+/* Shiki 代码块样式 */
+.code-block-wrapper {
+  contain: content;
+}
+
+.code-block-wrapper pre.shiki {
+  font-family: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
+}
+
+.code-block-wrapper pre.shiki code {
+  display: block;
+  font-family: inherit;
+  background: transparent;
+  padding: 0;
+}
+
+/* 代码行：限制重排范围，GPU 合成优化 */
+.code-block-wrapper .line {
+  display: inline;
+  contain: none;
 }
