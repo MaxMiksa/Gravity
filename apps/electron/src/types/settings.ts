@@ -1,0 +1,25 @@
+/**
+ * 应用设置类型
+ *
+ * 主题模式、IPC 通道等设置相关定义。
+ */
+
+/** 主题模式 */
+export type ThemeMode = 'light' | 'dark' | 'system'
+
+/** 默认主题模式 */
+export const DEFAULT_THEME_MODE: ThemeMode = 'dark'
+
+/** 应用设置 */
+export interface AppSettings {
+  /** 主题模式 */
+  themeMode: ThemeMode
+}
+
+/** 设置 IPC 通道 */
+export const SETTINGS_IPC_CHANNELS = {
+  GET: 'settings:get',
+  UPDATE: 'settings:update',
+  GET_SYSTEM_THEME: 'settings:get-system-theme',
+  ON_SYSTEM_THEME_CHANGED: 'settings:system-theme-changed',
+} as const
