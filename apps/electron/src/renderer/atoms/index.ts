@@ -6,3 +6,6 @@
 export * from './app-mode'
 export * from './active-view'
 export * from './settings-tab'
+export * from './chat-atoms'
+export * from './user-profile'
+export * from './theme'
