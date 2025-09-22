@@ -4,6 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Proma</title>
+    <script>
+      // 主题初始化脚本（在 React 加载前执行，避免闪烁）
+      // 从 localStorage 缓存读取主题模式，立即应用 dark 类名
+      ;(function() {
+        var mode = localStorage.getItem('proma-theme-mode') || 'dark'
+        if (mode === 'dark') {
+          document.documentElement.classList.add('dark')
+        } else if (mode === 'system') {
+          if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark')
+          }
+        }
+        // mode === 'light' 时不添加 dark 类
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
