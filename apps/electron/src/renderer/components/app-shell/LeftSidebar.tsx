@@ -156,6 +156,18 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
     setPendingDeleteId(id)
   }
 
+  /** 重命名对话标题 */
+  const handleRename = async (id: string, newTitle: string): Promise<void> => {
+    try {
+      const updated = await window.electronAPI.updateConversationTitle(id, newTitle)
+      setConversations((prev) =>
+        prev.map((c) => (c.id === updated.id ? updated : c))
+      )
+    } catch (error) {
+      console.error('[侧边栏] 重命名对话失败:', error)
+    }
+  }
+
   /** 确认删除对话 */
   const handleConfirmDelete = async (): Promise<void> => {
     if (!pendingDeleteId) return
@@ -222,6 +234,7 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
               hovered={conv.id === hoveredId}
               onSelect={() => handleSelectConversation(conv.id)}
               onDelete={(e) => handleRequestDelete(e, conv.id)}
+              onRename={handleRename}
               onMouseEnter={() => setHoveredId(conv.id)}
               onMouseLeave={() => setHoveredId(null)}
             />
@@ -274,6 +287,7 @@ interface ConversationItemProps {
   hovered: boolean
   onSelect: () => void
   onDelete: (e: React.MouseEvent) => void
+  onRename: (id: string, newTitle: string) => Promise<void>
   onMouseEnter: () => void
   onMouseLeave: () => void
 }
@@ -284,12 +298,52 @@ function ConversationItem({
   hovered,
   onSelect,
   onDelete,
+  onRename,
   onMouseEnter,
   onMouseLeave,
 }: ConversationItemProps): React.ReactElement {
+  const [editing, setEditing] = React.useState(false)
+  const [editTitle, setEditTitle] = React.useState('')
+  const inputRef = React.useRef<HTMLInputElement>(null)
+
+  /** 进入编辑模式 */
+  const startEdit = (): void => {
+    setEditTitle(conversation.title)
+    setEditing(true)
+    requestAnimationFrame(() => {
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    })
+  }
+
+  /** 保存标题 */
+  const saveTitle = async (): Promise<void> => {
+    const trimmed = editTitle.trim()
+    if (!trimmed || trimmed === conversation.title) {
+      setEditing(false)
+      return
+    }
+    await onRename(conversation.id, trimmed)
+    setEditing(false)
+  }
+
+  /** 键盘事件 */
+  const handleKeyDown = (e: React.KeyboardEvent): void => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      saveTitle()
+    } else if (e.key === 'Escape') {
+      setEditing(false)
+    }
+  }
+
   return (
     <button
       onClick={onSelect}
+      onDoubleClick={(e) => {
+        e.stopPropagation()
+        startEdit()
+      }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       className={cn(
@@ -300,19 +354,32 @@ function ConversationItem({
       )}
     >
       <div className="flex-1 min-w-0">
-        <div className={cn(
-          'truncate text-[13px] leading-5',
-          active ? 'text-foreground' : 'text-foreground/80'
-        )}>
-          {conversation.title}
-        </div>
+        {editing ? (
+          <input
+            ref={inputRef}
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={saveTitle}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full bg-transparent text-[13px] leading-5 text-foreground border-b border-primary/50 outline-none px-0 py-0"
+            maxLength={100}
+          />
+        ) : (
+          <div className={cn(
+            'truncate text-[13px] leading-5',
+            active ? 'text-foreground' : 'text-foreground/80'
+          )}>
+            {conversation.title}
+          </div>
+        )}
         <div className="text-[11px] text-foreground/40 mt-0.5">
           {formatDate(conversation.updatedAt)}
         </div>
       </div>
 
-      {/* 删除按钮（hover 时显示） */}
-      {hovered && (
+      {/* 删除按钮（hover 时显示，编辑时隐藏） */}
+      {hovered && !editing && (
         <button
           onClick={onDelete}
           className="flex-shrink-0 p-1 rounded-md text-foreground/30 hover:bg-destructive/10 hover:text-destructive transition-colors duration-100"
