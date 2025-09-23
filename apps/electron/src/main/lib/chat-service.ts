@@ -112,6 +112,7 @@ export async function sendMessage(
   const {
     conversationId, userMessage, channelId,
     modelId, systemMessage, contextLength, contextDividers, attachments,
+    thinkingEnabled,
   } = input
 
   // 1. 查找渠道
@@ -171,6 +172,7 @@ export async function sendMessage(
       systemMessage,
       attachments,
       readImageAttachments: getImageAttachmentData,
+      thinkingEnabled,
     })
 
     const { content, reasoning } = await streamSSE({
