@@ -254,6 +254,7 @@ export function ChatView(): React.ReactElement {
       contextLength,
       contextDividers,
       attachments: savedAttachments.length > 0 ? savedAttachments : undefined,
+      thinkingEnabled: thinkingEnabled || undefined,
     }
 
     // 乐观更新：立即在 UI 中显示用户消息

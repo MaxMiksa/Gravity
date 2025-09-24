@@ -212,17 +212,25 @@ export function ChatMessages({
     setLoadingMore(false)
   }, [onLoadMore, loadingMore, hasMore])
 
+  // 并排模式：自动加载全部历史消息（并排视图需要完整上下文）
+  React.useEffect(() => {
+    if (parallelMode && hasMore) {
+      handleLoadMore()
+    }
+  }, [parallelMode, hasMore, handleLoadMore])
+
   // 并排模式
   if (parallelMode) {
     return (
       <ParallelChatMessages
         messages={messages}
         streaming={streaming}
-        streamingContent={streamingContent}
-        streamingReasoning={streamingReasoning}
+        streamingContent={smoothContent}
+        streamingReasoning={smoothReasoning}
         contextDividers={contextDividers}
         onDeleteDivider={onDeleteDivider}
         onDeleteMessage={onDeleteMessage}
+        loadingMore={loadingMore}
       />
     )
   }
