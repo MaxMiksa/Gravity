@@ -41,7 +41,13 @@ interface AnthropicMessage {
 /** Anthropic SSE 事件 */
 interface AnthropicDeltaEvent {
   type: string
-  delta?: { type?: string; text?: string }
+  delta?: {
+    type?: string
+    /** 普通文本增量 (text_delta) */
+    text?: string
+    /** 思考内容增量 (thinking_delta) */
+    thinking?: string
+  }
 }
 
 /** Anthropic 标题响应 */
@@ -127,12 +133,26 @@ export class AnthropicAdapter implements ProviderAdapter {
     const url = normalizeAnthropicBaseUrl(input.baseUrl)
     const messages = toAnthropicMessages(input)
 
+    // 启用思考时需要更大的 max_tokens（budget_tokens 必须 < max_tokens）
+    const thinkingBudget = 16384
+    const maxTokens = input.thinkingEnabled ? thinkingBudget + 16384 : 8192
+
     const body: Record<string, unknown> = {
       model: input.modelId,
-      max_tokens: 8192,
+      max_tokens: maxTokens,
       messages,
       stream: true,
     }
+
+    // 启用 extended thinking：设置 thinking 参数
+    // 约束：启用时不能设置 temperature/top_k，budget_tokens 最小 1024
+    if (input.thinkingEnabled) {
+      body.thinking = {
+        type: 'enabled',
+        budget_tokens: thinkingBudget,
+      }
+    }
+
     if (input.systemMessage) {
       body.system = input.systemMessage
     }
@@ -155,11 +175,11 @@ export class AnthropicAdapter implements ProviderAdapter {
       const events: StreamEvent[] = []
 
       if (event.type === 'content_block_delta') {
-        // 推理内容（thinking block）
-        if (event.delta?.type === 'thinking_delta' && event.delta?.text) {
-          events.push({ type: 'reasoning', delta: event.delta.text })
+        // 推理内容（thinking_delta 的内容在 delta.thinking 字段中）
+        if (event.delta?.type === 'thinking_delta' && event.delta?.thinking) {
+          events.push({ type: 'reasoning', delta: event.delta.thinking })
         } else if (event.delta?.text) {
-          // 普通文本内容
+          // 普通文本内容（text_delta）
           events.push({ type: 'chunk', delta: event.delta.text })
         }
       }
