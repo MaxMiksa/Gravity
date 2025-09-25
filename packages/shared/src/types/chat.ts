@@ -152,6 +152,8 @@ export interface ChatSendInput {
   contextDividers?: string[]
   /** 文件附件列表 */
   attachments?: FileAttachment[]
+  /** 是否启用思考模式 */
+  thinkingEnabled?: boolean
 }
 
 // ===== 标题生成 =====
