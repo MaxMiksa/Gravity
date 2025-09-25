@@ -129,14 +129,26 @@ export class GoogleAdapter implements ProviderAdapter {
     const url = normalizeBaseUrl(input.baseUrl)
     const contents = toGoogleContents(input)
 
+    // 构建 generationConfig
+    const generationConfig: Record<string, unknown> = {}
+
+    // 思考模式配置：
+    // - 启用时：显示思考过程 + 设置 thinkingBudget 控制深度
+    // - 关闭时：不传 thinkingConfig，模型使用默认行为
+    if (input.thinkingEnabled) {
+      generationConfig.thinkingConfig = {
+        includeThoughts: true,
+        thinkingBudget: 16384,
+      }
+    }
+
     const body: Record<string, unknown> = {
       contents,
-      generationConfig: {
-        // 启用思考过程回显（Gemini 2.5/3 系列支持，不支持的模型会忽略此配置）
-        thinkingConfig: {
-          includeThoughts: true,
-        },
-      },
+    }
+
+    // 仅在有配置时才添加 generationConfig
+    if (Object.keys(generationConfig).length > 0) {
+      body.generationConfig = generationConfig
     }
 
     if (input.systemMessage) {
