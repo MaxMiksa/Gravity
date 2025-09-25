@@ -93,6 +93,8 @@ export interface StreamRequestInput {
   attachments?: FileAttachment[]
   /** 图片附件读取器（由 Electron 层注入） */
   readImageAttachments: ImageAttachmentReader
+  /** 是否启用思考模式（各适配器根据供应商 API 自行转换） */
+  thinkingEnabled?: boolean
 }
 
 /** 标题生成请求的输入参数 */
