@@ -214,12 +214,12 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
           active={activeItem === 'pinned'}
           onClick={() => handleItemClick('pinned')}
         />
-        <SidebarItem
+        {/* <SidebarItem
           icon={<MessagesSquare size={16} />}
           label="对话列表"
           active={activeItem === 'all-chats'}
           onClick={() => handleItemClick('all-chats')}
-        />
+        /> */}
       </div>
 
 

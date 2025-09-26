@@ -63,16 +63,16 @@ export function ChatHeader(): React.ReactElement | null {
   }
 
   return (
-    <div className="relative z-[51] flex items-center gap-2 px-4 py-3 min-h-[48px]">
+    <div className="relative z-[51] flex items-center gap-2 px-4 h-[48px] titlebar-no-drag">
       {editing ? (
-        <div className="flex items-center gap-1.5 flex-1">
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
           <input
             ref={inputRef}
             value={editTitle}
             onChange={(e) => setEditTitle(e.target.value)}
             onKeyDown={handleKeyDown}
             onBlur={saveTitle}
-            className="flex-1 bg-transparent text-sm font-medium border-b border-primary/50 outline-none px-0 py-0.5"
+            className="flex-1 bg-transparent text-sm font-medium border-b border-primary/50 outline-none px-0 py-0.5 min-w-0"
             maxLength={100}
           />
           <button
@@ -93,38 +93,36 @@ export function ChatHeader(): React.ReactElement | null {
           </button>
         </div>
       ) : (
-        <>
-          <button
-            type="button"
-            onClick={startEdit}
-            className="group flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-foreground/80 transition-colors truncate flex-1"
-          >
-            <span className="truncate">{conversation.title}</span>
-            <Pencil className="size-3 opacity-40 group-hover:opacity-70 transition-opacity flex-shrink-0" />
-          </button>
-
-          {/* 并排模式切换 */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  'h-8 w-8 flex-shrink-0',
-                  parallelMode && 'bg-accent text-accent-foreground'
-                )}
-                onClick={() => setParallelMode(!parallelMode)}
-              >
-                <Columns2 className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p>{parallelMode ? '关闭并排模式' : '并排模式'}</p>
-            </TooltipContent>
-          </Tooltip>
-        </>
+        <button
+          type="button"
+          onClick={startEdit}
+          className="group flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-foreground/80 transition-colors truncate flex-1 min-w-0"
+        >
+          <span className="truncate">{conversation.title}</span>
+          <Pencil className="size-3 opacity-40 group-hover:opacity-70 transition-opacity flex-shrink-0" />
+        </button>
       )}
+
+      {/* 并排模式切换 - 始终显示，避免编辑时高度跳动 */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className={cn(
+              'h-8 w-8 flex-shrink-0',
+              parallelMode && 'bg-accent text-accent-foreground'
+            )}
+            onClick={() => setParallelMode(!parallelMode)}
+          >
+            <Columns2 className="size-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          <p>{parallelMode ? '关闭并排模式' : '并排模式'}</p>
+        </TooltipContent>
+      </Tooltip>
     </div>
   )
 }
