@@ -26,8 +26,8 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         {/* 左侧边栏：默认 280px，放大时可收缩到最小 180px */}
         <LeftSidebar />
 
-        {/* 右侧容器，带 padding 实现浮动效果 */}
-        <div className="flex-1 min-w-0 p-2">
+        {/* 右侧容器：relative z-[60] 使其在 z-50 拖动区域之上；titlebar-no-drag 标记非拖动区域 */}
+        <div className="flex-1 min-w-0 p-2 relative z-[60] titlebar-no-drag">
           {/* 主内容面板（根据模式自动切换内容） */}
           <MainContentPanel />
         </div>

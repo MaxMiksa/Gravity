@@ -3,6 +3,10 @@
   "version": "0.1.14",
   "description": "Proma next gen ai software with general agents - Electron App",
   "main": "dist/main.cjs",
+  "author": {
+    "name": "ErlichLiu",
+    "email": "erlichliu@gmail.com"
+  },
   "private": true,
   "type": "module",
   "scripts": {
