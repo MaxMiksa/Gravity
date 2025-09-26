@@ -38,3 +38,6 @@ craft-agents-oss
 
 # ignore what_are_humans_thinking folder
 what_are_humans_thinking
+
+# vendor binaries
+vendor
