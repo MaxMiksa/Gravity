@@ -9,10 +9,9 @@
  * 移植自 proma-frontend 的 parallel-chat-messages.tsx。
  */
 
-import { Fragment, useMemo } from 'react'
+import { Fragment, useMemo, useRef, useEffect } from 'react'
 import { useAtomValue } from 'jotai'
 import { Loader2 } from 'lucide-react'
-import { StickToBottom } from 'use-stick-to-bottom'
 import { ChatMessageItem, formatMessageTime } from './ChatMessageItem'
 import { ContextDivider } from '@/components/ai-elements/context-divider'
 import {
@@ -135,18 +134,25 @@ function MessageColumn({
   streamingReasoning = '',
 }: MessageColumnProps): React.ReactElement {
   const selectedModel = useAtomValue(selectedModelAtom)
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  // 流式输出时自动滚动到底部（仅 assistant 列）
+  useEffect(() => {
+    if (side === 'assistant' && streaming && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [streaming, streamingContent, streamingReasoning, side])
 
   if (messages.length === 0 && !(side === 'assistant' && streaming)) {
     return <EmptyColumn side={side} />
   }
 
   return (
-    <StickToBottom
-      className="flex-1 overflow-y-auto scrollbar-thin overscroll-contain"
-      initial="smooth"
-      resize="smooth"
+    <div
+      ref={scrollRef}
+      className="flex-1 min-h-0 overflow-y-auto scrollbar-none overscroll-contain"
     >
-      <StickToBottom.Content className="flex flex-col gap-6 p-4">
+      <div className="flex flex-col gap-6 p-4">
         {messages.map((message) => (
           <ChatMessageItem
             key={message.id}
@@ -188,8 +194,8 @@ function MessageColumn({
             </MessageContent>
           </Message>
         )}
-      </StickToBottom.Content>
-    </StickToBottom>
+      </div>
+    </div>
   )
 }
 
@@ -222,7 +228,7 @@ export function ParallelChatMessages({
   // 如果没有分隔线，使用简单的两列布局
   if (segments.length <= 1) {
     return (
-      <div className="relative flex flex-1 overflow-hidden">
+      <div className="relative flex-1 min-h-0">
         {/* 加载更多历史消息的旋转器 */}
         {loadingMore && (
           <div className="absolute top-0 left-0 right-0 z-10">
@@ -230,37 +236,40 @@ export function ParallelChatMessages({
           </div>
         )}
 
-        {/* 左侧用户消息 */}
-        <div className="w-1/2 flex flex-col overflow-hidden border-r border-border">
-          <div className="px-4 py-2 border-b border-border bg-muted/30">
-            <span className="text-sm font-medium text-muted-foreground">
-              用户消息
-            </span>
+        {/* 绝对定位内层，获得确定高度，解决嵌套 flex 滚动问题 */}
+        <div className="absolute inset-0 flex">
+          {/* 左侧用户消息 */}
+          <div className="w-1/2 flex flex-col overflow-hidden border-r border-border">
+            <div className="px-4 py-2 border-b border-border bg-muted/30">
+              <span className="text-sm font-medium text-muted-foreground">
+                用户消息
+              </span>
+            </div>
+            <MessageColumn
+              messages={userMessages}
+              allMessages={messages}
+              onDeleteMessage={onDeleteMessage}
+              side="user"
+            />
           </div>
-          <MessageColumn
-            messages={userMessages}
-            allMessages={messages}
-            onDeleteMessage={onDeleteMessage}
-            side="user"
-          />
-        </div>
 
-        {/* 右侧助手消息 */}
-        <div className="w-1/2 flex flex-col overflow-hidden">
-          <div className="px-4 py-2 border-b border-border bg-muted/30">
-            <span className="text-sm font-medium text-muted-foreground">
-              助手回复
-            </span>
+          {/* 右侧助手消息 */}
+          <div className="w-1/2 flex flex-col overflow-hidden">
+            <div className="px-4 py-2 border-b border-border bg-muted/30">
+              <span className="text-sm font-medium text-muted-foreground">
+                助手回复
+              </span>
+            </div>
+            <MessageColumn
+              messages={assistantMessages}
+              allMessages={messages}
+              onDeleteMessage={onDeleteMessage}
+              side="assistant"
+              streaming={streaming}
+              streamingContent={streamingContent}
+              streamingReasoning={streamingReasoning}
+            />
           </div>
-          <MessageColumn
-            messages={assistantMessages}
-            allMessages={messages}
-            onDeleteMessage={onDeleteMessage}
-            side="assistant"
-            streaming={streaming}
-            streamingContent={streamingContent}
-            streamingReasoning={streamingReasoning}
-          />
         </div>
       </div>
     )
@@ -268,68 +277,70 @@ export function ParallelChatMessages({
 
   // 有分隔线的情况：分段渲染
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
-      {/* 加载更多历史消息的旋转器 */}
-      {loadingMore && <LoadMoreSpinner />}
+    <div className="relative flex-1 min-h-0">
+      <div className="absolute inset-0 flex flex-col overflow-hidden">
+        {/* 加载更多历史消息的旋转器 */}
+        {loadingMore && <LoadMoreSpinner />}
 
-      {segments.map((segment, index) => (
-        <Fragment key={index}>
-          {/* 该段的左右并排消息 */}
-          <div
-            className={
-              index === segments.length - 1
-                ? 'flex flex-1 min-h-0 overflow-hidden'
-                : 'flex flex-shrink-0 overflow-hidden'
-            }
-          >
-            {/* 左侧用户消息 */}
-            <div className="w-1/2 flex flex-col overflow-hidden border-r border-border">
-              {index === 0 && (
-                <div className="px-4 py-2 border-b border-border bg-muted/30">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    用户消息
-                  </span>
-                </div>
-              )}
-              <MessageColumn
-                messages={segment.userMessages}
-                allMessages={messages}
-                onDeleteMessage={onDeleteMessage}
-                side="user"
-              />
+        {segments.map((segment, index) => (
+          <Fragment key={index}>
+            {/* 该段的左右并排消息 */}
+            <div
+              className={
+                index === segments.length - 1
+                  ? 'flex flex-1 min-h-0 overflow-hidden'
+                  : 'flex flex-shrink-0 overflow-hidden'
+              }
+            >
+              {/* 左侧用户消息 */}
+              <div className="w-1/2 flex flex-col overflow-hidden border-r border-border">
+                {index === 0 && (
+                  <div className="px-4 py-2 border-b border-border bg-muted/30">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      用户消息
+                    </span>
+                  </div>
+                )}
+                <MessageColumn
+                  messages={segment.userMessages}
+                  allMessages={messages}
+                  onDeleteMessage={onDeleteMessage}
+                  side="user"
+                />
+              </div>
+
+              {/* 右侧助手消息 */}
+              <div className="w-1/2 flex flex-col overflow-hidden">
+                {index === 0 && (
+                  <div className="px-4 py-2 border-b border-border bg-muted/30">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      助手回复
+                    </span>
+                  </div>
+                )}
+                <MessageColumn
+                  messages={segment.assistantMessages}
+                  allMessages={messages}
+                  onDeleteMessage={onDeleteMessage}
+                  side="assistant"
+                  streaming={index === segments.length - 1 ? streaming : false}
+                  streamingContent={index === segments.length - 1 ? streamingContent : ''}
+                  streamingReasoning={index === segments.length - 1 ? streamingReasoning : ''}
+                />
+              </div>
             </div>
 
-            {/* 右侧助手消息 */}
-            <div className="w-1/2 flex flex-col overflow-hidden">
-              {index === 0 && (
-                <div className="px-4 py-2 border-b border-border bg-muted/30">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    助手回复
-                  </span>
-                </div>
-              )}
-              <MessageColumn
-                messages={segment.assistantMessages}
-                allMessages={messages}
-                onDeleteMessage={onDeleteMessage}
-                side="assistant"
-                streaming={index === segments.length - 1 ? streaming : false}
-                streamingContent={index === segments.length - 1 ? streamingContent : ''}
-                streamingReasoning={index === segments.length - 1 ? streamingReasoning : ''}
+            {/* 当前段落后的分隔线 */}
+            {segment.dividerMessageId && (
+              <ContextDivider
+                messageId={segment.dividerMessageId}
+                onDelete={onDeleteDivider}
+                className="flex-shrink-0"
               />
-            </div>
-          </div>
-
-          {/* 当前段落后的分隔线 */}
-          {segment.dividerMessageId && (
-            <ContextDivider
-              messageId={segment.dividerMessageId}
-              onDelete={onDeleteDivider}
-              className="flex-shrink-0"
-            />
-          )}
-        </Fragment>
-      ))}
+            )}
+          </Fragment>
+        ))}
+      </div>
     </div>
   )
 }
