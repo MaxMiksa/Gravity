@@ -136,6 +136,13 @@ function MessageColumn({
   const selectedModel = useAtomValue(selectedModelAtom)
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  // 消息加载后自动滚动到底部（两列都滚到最新消息）
+  useEffect(() => {
+    if (scrollRef.current && messages.length > 0) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [messages])
+
   // 流式输出时自动滚动到底部（仅 assistant 列）
   useEffect(() => {
     if (side === 'assistant' && streaming && scrollRef.current) {
