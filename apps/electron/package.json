@@ -1,6 +1,6 @@
 {
   "name": "@proma/electron",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "Proma next gen ai software with general agents - Electron App",
   "main": "dist/main.cjs",
   "author": {
@@ -30,7 +30,10 @@
     "dist": "electron-builder",
     "dist:mac": "electron-builder --mac",
     "dist:win": "electron-builder --win",
-    "dist:linux": "electron-builder --linux"
+    "dist:linux": "electron-builder --linux",
+    "dist:visual": "bun run scripts/dist.ts",
+    "dist:fast": "bun run scripts/dist.ts --current-arch --dmg",
+    "dist:debug": "bun run scripts/dist.ts --current-arch --verbose"
   },
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",
