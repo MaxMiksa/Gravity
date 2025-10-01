@@ -22,9 +22,7 @@ import {
   currentConversationIdAtom,
   currentConversationAtom,
   currentMessagesAtom,
-  streamingAtom,
-  streamingContentAtom,
-  streamingReasoningAtom,
+  streamingStatesAtom,
   selectedModelAtom,
   conversationsAtom,
   contextLengthAtom,
@@ -34,7 +32,7 @@ import {
   hasMoreMessagesAtom,
   INITIAL_MESSAGE_LIMIT,
 } from '@/atoms/chat-atoms'
-import type { PendingAttachment } from '@/atoms/chat-atoms'
+import type { PendingAttachment, ConversationStreamState } from '@/atoms/chat-atoms'
 import type {
   ChatSendInput,
   GenerateTitleInput,
@@ -50,9 +48,7 @@ export function ChatView(): React.ReactElement {
   const currentConversationId = useAtomValue(currentConversationIdAtom)
   const currentConversation = useAtomValue(currentConversationAtom)
   const [currentMessages, setCurrentMessages] = useAtom(currentMessagesAtom)
-  const [streaming, setStreaming] = useAtom(streamingAtom)
-  const setStreamingContent = useSetAtom(streamingContentAtom)
-  const setStreamingReasoning = useSetAtom(streamingReasoningAtom)
+  const setStreamingStates = useSetAtom(streamingStatesAtom)
   const [selectedModel, setSelectedModel] = useAtom(selectedModelAtom)
   const setConversations = useSetAtom(conversationsAtom)
   const contextLength = useAtomValue(contextLengthAtom)
@@ -61,9 +57,14 @@ export function ChatView(): React.ReactElement {
   const [pendingAttachments, setPendingAttachments] = useAtom(pendingAttachmentsAtom)
   const setHasMoreMessages = useSetAtom(hasMoreMessagesAtom)
 
-  // 首条消息标题生成相关 ref
-  // pendingTitleRef 存储待生成标题的信息，非 null 时表示当前回复完成后需要生成标题
-  const pendingTitleRef = React.useRef<GenerateTitleInput | null>(null)
+  // 首条消息标题生成相关 ref（支持多对话并行）
+  const pendingTitleRef = React.useRef<Map<string, GenerateTitleInput>>(new Map())
+
+  // 当前对话 ID 的 ref，供 IPC 回调使用（避免闭包捕获旧值）
+  const currentConvIdRef = React.useRef(currentConversationId)
+  React.useEffect(() => {
+    currentConvIdRef.current = currentConversationId
+  }, [currentConversationId])
 
   // 加载当前对话最近消息 + 上下文分隔线
   React.useEffect(() => {
@@ -99,39 +100,65 @@ export function ChatView(): React.ReactElement {
     }
   }, [currentConversationId, currentConversation?.contextDividers, currentConversation?.modelId, currentConversation?.channelId, setCurrentMessages, setContextDividers, setHasMoreMessages, setSelectedModel])
 
-  // 订阅流式 IPC 事件
+  // 订阅流式 IPC 事件（全局，不按 conversationId 过滤）
   React.useEffect(() => {
+    /** 辅助函数：更新 Map 中某个对话的流式状态 */
+    const updateState = (
+      convId: string,
+      updater: (prev: ConversationStreamState) => ConversationStreamState
+    ): void => {
+      setStreamingStates((prev) => {
+        const current = prev.get(convId) ?? { streaming: false, content: '', reasoning: '' }
+        const next = updater(current)
+        const map = new Map(prev)
+        map.set(convId, next)
+        return map
+      })
+    }
+
+    /** 辅助函数：从 Map 中移除某个对话的流式状态 */
+    const removeState = (convId: string): void => {
+      setStreamingStates((prev) => {
+        if (!prev.has(convId)) return prev
+        const map = new Map(prev)
+        map.delete(convId)
+        return map
+      })
+    }
+
     const cleanupChunk = window.electronAPI.onStreamChunk(
       (event: StreamChunkEvent) => {
-        if (event.conversationId !== currentConversationId) return
-        setStreamingContent((prev) => prev + event.delta)
+        updateState(event.conversationId, (s) => ({
+          ...s,
+          content: s.content + event.delta,
+        }))
       }
     )
 
     const cleanupReasoning = window.electronAPI.onStreamReasoning(
       (event: StreamReasoningEvent) => {
-        if (event.conversationId !== currentConversationId) return
-        setStreamingReasoning((prev) => prev + event.delta)
+        updateState(event.conversationId, (s) => ({
+          ...s,
+          reasoning: s.reasoning + event.delta,
+        }))
       }
     )
 
     const cleanupComplete = window.electronAPI.onStreamComplete(
       (event: StreamCompleteEvent) => {
-        if (event.conversationId !== currentConversationId) return
+        // 清理 Map 中的流式状态
+        removeState(event.conversationId)
 
-        // 先加载持久消息，再清空 streaming 状态
-        // 确保持久消息已在 DOM 中，临时流式消息才消失（避免闪烁空白）
-        window.electronAPI
-          .getConversationMessages(event.conversationId)
-          .then((msgs) => {
-            // React 18 自动批处理：以下 setState 合并为一次渲染
-            setCurrentMessages(msgs)
-            setHasMoreMessages(false)
-            setStreaming(false)
-            setStreamingContent('')
-            setStreamingReasoning('')
-          })
-          .catch(console.error)
+        // 仅当完成的是当前对话时，重新加载消息
+        if (event.conversationId === currentConvIdRef.current) {
+          window.electronAPI
+            .getConversationMessages(event.conversationId)
+            .then((msgs) => {
+              setCurrentMessages(msgs)
+              setHasMoreMessages(false)
+            })
+            .catch(console.error)
+        }
 
         // 刷新对话列表（updatedAt 已更新）
         window.electronAPI
@@ -140,12 +167,11 @@ export function ChatView(): React.ReactElement {
           .catch(console.error)
 
         // 第一条消息回复完成后，生成对话标题
-        const titleInput = pendingTitleRef.current
+        const titleInput = pendingTitleRef.current.get(event.conversationId)
         if (titleInput) {
-          pendingTitleRef.current = null
+          pendingTitleRef.current.delete(event.conversationId)
           window.electronAPI.generateTitle(titleInput).then((title) => {
             if (!title) return
-            // 更新对话标题
             window.electronAPI
               .updateConversationTitle(event.conversationId, title)
               .then((updated) => {
@@ -161,21 +187,21 @@ export function ChatView(): React.ReactElement {
 
     const cleanupError = window.electronAPI.onStreamError(
       (event: StreamErrorEvent) => {
-        if (event.conversationId !== currentConversationId) return
         console.error('[ChatView] 流式错误:', event.error)
 
-        // 重新加载消息（用户消息可能已写入）
-        window.electronAPI
-          .getConversationMessages(event.conversationId)
-          .then((msgs) => {
-            setCurrentMessages(msgs)
-            setHasMoreMessages(false)
-          })
-          .catch(console.error)
+        // 清理 Map 中的流式状态
+        removeState(event.conversationId)
 
-        setStreaming(false)
-        setStreamingContent('')
-        setStreamingReasoning('')
+        // 仅当错误的是当前对话时，重新加载消息
+        if (event.conversationId === currentConvIdRef.current) {
+          window.electronAPI
+            .getConversationMessages(event.conversationId)
+            .then((msgs) => {
+              setCurrentMessages(msgs)
+              setHasMoreMessages(false)
+            })
+            .catch(console.error)
+        }
       }
     )
 
@@ -186,12 +212,9 @@ export function ChatView(): React.ReactElement {
       cleanupError()
     }
   }, [
-    currentConversationId,
+    setStreamingStates,
     setCurrentMessages,
     setConversations,
-    setStreaming,
-    setStreamingContent,
-    setStreamingReasoning,
     setHasMoreMessages,
   ])
 
@@ -202,11 +225,11 @@ export function ChatView(): React.ReactElement {
     // 判断是否为第一条消息（发送前历史为空）
     const isFirstMessage = currentMessages.length === 0
     if (isFirstMessage && content) {
-      pendingTitleRef.current = {
+      pendingTitleRef.current.set(currentConversationId, {
         userMessage: content,
         channelId: selectedModel.channelId,
         modelId: selectedModel.modelId,
-      }
+      })
     }
 
     // 获取当前待发送附件的快照
@@ -241,9 +264,12 @@ export function ChatView(): React.ReactElement {
     }
     setPendingAttachments([])
 
-    setStreaming(true)
-    setStreamingContent('')
-    setStreamingReasoning('')
+    // 初始化当前对话的流式状态
+    setStreamingStates((prev) => {
+      const map = new Map(prev)
+      map.set(currentConversationId, { streaming: true, content: '', reasoning: '' })
+      return map
+    })
 
     const input: ChatSendInput = {
       conversationId: currentConversationId,
@@ -271,16 +297,27 @@ export function ChatView(): React.ReactElement {
 
     window.electronAPI.sendMessage(input).catch((error) => {
       console.error('[ChatView] 发送消息失败:', error)
-      setStreaming(false)
+      setStreamingStates((prev) => {
+        if (!prev.has(currentConversationId)) return prev
+        const map = new Map(prev)
+        map.delete(currentConversationId)
+        return map
+      })
     })
   }
 
   /** 停止生成 */
   const handleStop = (): void => {
     if (!currentConversationId) return
-    // 只切换 streaming 状态（按钮即时变化），不清空内容
+    // 标记 streaming=false（按钮即时变化），不清空内容
     // 内容保留在 UI 直到 onStreamComplete 原子性替换为磁盘消息，避免闪烁
-    setStreaming(false)
+    setStreamingStates((prev) => {
+      const current = prev.get(currentConversationId)
+      if (!current) return prev
+      const map = new Map(prev)
+      map.set(currentConversationId, { ...current, streaming: false })
+      return map
+    })
     window.electronAPI.stopGeneration(currentConversationId).catch(console.error)
   }
 
