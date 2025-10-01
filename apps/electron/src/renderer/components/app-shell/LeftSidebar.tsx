@@ -17,6 +17,7 @@ import {
   conversationsAtom,
   currentConversationIdAtom,
   selectedModelAtom,
+  streamingConversationIdsAtom,
 } from '@/atoms/chat-atoms'
 import { userProfileAtom } from '@/atoms/user-profile'
 import {
@@ -99,6 +100,7 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
   const [pendingDeleteId, setPendingDeleteId] = React.useState<string | null>(null)
   const setUserProfile = useSetAtom(userProfileAtom)
   const selectedModel = useAtomValue(selectedModelAtom)
+  const streamingIds = useAtomValue(streamingConversationIdsAtom)
 
   // 初始加载对话列表 + 用户档案
   React.useEffect(() => {
@@ -232,6 +234,7 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
               conversation={conv}
               active={conv.id === currentConversationId}
               hovered={conv.id === hoveredId}
+              streaming={streamingIds.has(conv.id)}
               onSelect={() => handleSelectConversation(conv.id)}
               onDelete={(e) => handleRequestDelete(e, conv.id)}
               onRename={handleRename}
@@ -285,6 +288,7 @@ interface ConversationItemProps {
   conversation: ConversationMeta
   active: boolean
   hovered: boolean
+  streaming: boolean
   onSelect: () => void
   onDelete: (e: React.MouseEvent) => void
   onRename: (id: string, newTitle: string) => Promise<void>
@@ -296,6 +300,7 @@ function ConversationItem({
   conversation,
   active,
   hovered,
+  streaming,
   onSelect,
   onDelete,
   onRename,
@@ -367,10 +372,17 @@ function ConversationItem({
           />
         ) : (
           <div className={cn(
-            'truncate text-[13px] leading-5',
+            'truncate text-[13px] leading-5 flex items-center gap-1.5',
             active ? 'text-foreground' : 'text-foreground/80'
           )}>
-            {conversation.title}
+            {/* 流式输出绿色呼吸点指示器 */}
+            {streaming && (
+              <span className="relative flex-shrink-0 size-2">
+                <span className="absolute inset-0 rounded-full bg-green-500/60 animate-ping" />
+                <span className="relative block size-2 rounded-full bg-green-500" />
+              </span>
+            )}
+            <span className="truncate">{conversation.title}</span>
           </div>
         )}
         <div className="text-[11px] text-foreground/40 mt-0.5">

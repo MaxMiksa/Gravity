@@ -30,14 +30,69 @@ export const currentConversationIdAtom = atom<string | null>(null)
 /** 当前对话的消息列表 */
 export const currentMessagesAtom = atom<ChatMessage[]>([])
 
-/** 是否正在流式生成 */
-export const streamingAtom = atom<boolean>(false)
+/** 单个对话的流式状态 */
+export interface ConversationStreamState {
+  streaming: boolean
+  content: string
+  reasoning: string
+}
 
-/** 流式生成中的临时累积内容 */
-export const streamingContentAtom = atom<string>('')
+/**
+ * 全局流式状态 Map — 以 conversationId 为 key
+ * 流式进行中：Map 中存在该 key
+ * 流式结束后：从 Map 中删除该 key
+ */
+export const streamingStatesAtom = atom<Map<string, ConversationStreamState>>(new Map())
 
-/** 流式生成中的推理内容 */
-export const streamingReasoningAtom = atom<string>('')
+/**
+ * 当前正在流式输出的对话 ID 集合（派生只读原子）
+ * 用于侧边栏绿色呼吸点指示器
+ */
+export const streamingConversationIdsAtom = atom<Set<string>>((get) => {
+  const states = get(streamingStatesAtom)
+  const ids = new Set<string>()
+  for (const [id, state] of states) {
+    if (state.streaming) ids.add(id)
+  }
+  return ids
+})
+
+/**
+ * 是否正在流式生成（派生读写原子，向后兼容）
+ * 读：当前对话是否在流式中
+ * 写：更新当前对话的 streaming 标志
+ */
+export const streamingAtom = atom<boolean>(
+  (get) => {
+    const currentId = get(currentConversationIdAtom)
+    if (!currentId) return false
+    return get(streamingStatesAtom).get(currentId)?.streaming ?? false
+  },
+)
+
+/**
+ * 流式生成中的临时累积内容（派生读写原子，向后兼容）
+ * 读：当前对话的累积内容
+ */
+export const streamingContentAtom = atom<string>(
+  (get) => {
+    const currentId = get(currentConversationIdAtom)
+    if (!currentId) return ''
+    return get(streamingStatesAtom).get(currentId)?.content ?? ''
+  },
+)
+
+/**
+ * 流式生成中的推理内容（派生读写原子，向后兼容）
+ * 读：当前对话的推理内容
+ */
+export const streamingReasoningAtom = atom<string>(
+  (get) => {
+    const currentId = get(currentConversationIdAtom)
+    if (!currentId) return ''
+    return get(streamingStatesAtom).get(currentId)?.reasoning ?? ''
+  },
+)
 
 /** 选中的模型（持久化到 localStorage） */
 export const selectedModelAtom = atomWithStorage<SelectedModel | null>(
