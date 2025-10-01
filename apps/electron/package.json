@@ -1,6 +1,6 @@
 {
   "name": "@proma/electron",
-  "version": "0.1.16",
+  "version": "0.1.18",
   "description": "Proma next gen ai software with general agents - Electron App",
   "main": "dist/main.cjs",
   "author": {
@@ -64,18 +64,23 @@
     "cmdk": "^1.1.1",
     "lowlight": "^3.3.0",
     "lucide-react": "^0.460.0",
+    "officeparser": "4.2.0",
+    "pdf-parse": "1.1.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^2.5.5",
-    "use-stick-to-bottom": "^1.1.2"
+    "use-stick-to-bottom": "^1.1.2",
+    "word-extractor": "1.0.4"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^20.0.0",
+    "@types/pdf-parse": "^1.1.5",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
+    "@types/word-extractor": "1.0.6",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.2.1",

@@ -29,7 +29,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { CodeBlock } from '@proma/ui'
+import { CodeBlock, MermaidBlock } from '@proma/ui'
 import type { HTMLAttributes, ComponentProps, ReactNode } from 'react'
 import type { FileAttachment } from '@proma/shared'
 
@@ -215,7 +215,34 @@ export const MessageResponse = React.memo(
         <Markdown
           remarkPlugins={[remarkGfm]}
           components={{
-            pre: ({ children: preChildren }) => <CodeBlock>{preChildren}</CodeBlock>,
+            pre: ({ children: preChildren }) => {
+              // 检测子 <code> 元素的 className 是否包含 language-mermaid
+              const codeChild = React.Children.toArray(preChildren).find(
+                (child): child is React.ReactElement =>
+                  React.isValidElement(child) && (child as React.ReactElement).type === 'code'
+              ) as React.ReactElement | undefined
+
+              if (codeChild) {
+                const codeProps = codeChild.props as { className?: string; children?: React.ReactNode }
+                if (codeProps.className?.includes('language-mermaid')) {
+                  // 递归提取纯文本（children 可能是字符串数组）
+                  const extractText = (node: React.ReactNode): string => {
+                    if (typeof node === 'string') return node
+                    if (typeof node === 'number') return String(node)
+                    if (!node) return ''
+                    if (Array.isArray(node)) return node.map(extractText).join('')
+                    if (React.isValidElement(node)) {
+                      return extractText((node.props as { children?: React.ReactNode }).children)
+                    }
+                    return ''
+                  }
+                  const mermaidCode = extractText(codeProps.children).replace(/\n$/, '')
+                  return <MermaidBlock code={mermaidCode} />
+                }
+              }
+
+              return <CodeBlock>{preChildren}</CodeBlock>
+            },
           }}
         >
           {children}
