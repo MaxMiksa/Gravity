@@ -54,6 +54,7 @@ import {
   deleteAttachment,
   openFileDialog,
 } from './lib/attachment-service'
+import { extractTextFromAttachment } from './lib/document-parser'
 import { getUserProfile, updateUserProfile } from './lib/user-profile-service'
 import { getSettings, updateSettings } from './lib/settings-service'
 
@@ -288,6 +289,14 @@ export function registerIpcHandlers(): void {
     CHAT_IPC_CHANNELS.OPEN_FILE_DIALOG,
     async (): Promise<FileDialogResult> => {
       return openFileDialog()
+    }
+  )
+
+  // 提取附件文档的文本内容
+  ipcMain.handle(
+    CHAT_IPC_CHANNELS.EXTRACT_ATTACHMENT_TEXT,
+    async (_, localPath: string): Promise<string> => {
+      return extractTextFromAttachment(localPath)
     }
   )
 

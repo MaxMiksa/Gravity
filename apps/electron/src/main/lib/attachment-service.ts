@@ -13,7 +13,7 @@
 import { readFileSync, writeFileSync, unlinkSync, existsSync, rmSync } from 'node:fs'
 import { extname, basename, join } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { dialog } from 'electron'
+import { dialog, BrowserWindow } from 'electron'
 import {
   getConversationAttachmentsDir,
   resolveAttachmentPath,
@@ -55,17 +55,23 @@ const MIME_MAP: Record<string, string> = {
   '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   '.xls': 'application/vnd.ms-excel',
   '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  '.ppt': 'application/vnd.ms-powerpoint',
+  '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  '.odt': 'application/vnd.oasis.opendocument.text',
+  '.odp': 'application/vnd.oasis.opendocument.presentation',
+  '.ods': 'application/vnd.oasis.opendocument.spreadsheet',
 }
 
 /** 文件选择对话框支持的过滤器 */
 const FILE_FILTERS = [
   {
-    name: '图片',
-    extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'],
-  },
-  {
-    name: '文档',
-    extensions: ['pdf', 'txt', 'md', 'json', 'csv', 'xml', 'html', 'doc', 'docx', 'xls', 'xlsx'],
+    name: '支持的文件',
+    extensions: [
+      'png', 'jpg', 'jpeg', 'gif', 'webp',
+      'pdf', 'txt', 'md', 'json', 'csv', 'xml', 'html',
+      'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+      'odt', 'odp', 'ods',
+    ],
   },
   {
     name: '所有文件',
@@ -192,10 +198,16 @@ export function deleteConversationAttachments(conversationId: string): void {
  * @returns 选中的文件列表
  */
 export async function openFileDialog(): Promise<FileDialogResult> {
-  const result = await dialog.showOpenDialog({
-    properties: ['openFile', 'multiSelections'],
+  // macOS 上必须传入父窗口，否则对话框可能出现在应用窗口后面
+  const parentWindow = BrowserWindow.getFocusedWindow()
+  const dialogOptions = {
+    properties: ['openFile', 'multiSelections'] as const,
     filters: FILE_FILTERS,
-  })
+  }
+
+  const result = parentWindow
+    ? await dialog.showOpenDialog(parentWindow, dialogOptions)
+    : await dialog.showOpenDialog(dialogOptions)
 
   if (result.canceled || result.filePaths.length === 0) {
     return { files: [] }
