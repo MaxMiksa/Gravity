@@ -131,6 +131,9 @@ export interface ElectronAPI {
   /** 打开文件选择对话框 */
   openFileDialog: () => Promise<FileDialogResult>
 
+  /** 提取附件文档的文本内容 */
+  extractAttachmentText: (localPath: string) => Promise<string>
+
   // ===== 用户档案相关 =====
 
   /** 获取用户档案 */
@@ -279,6 +282,10 @@ const electronAPI: ElectronAPI = {
 
   openFileDialog: () => {
     return ipcRenderer.invoke(CHAT_IPC_CHANNELS.OPEN_FILE_DIALOG)
+  },
+
+  extractAttachmentText: (localPath: string) => {
+    return ipcRenderer.invoke(CHAT_IPC_CHANNELS.EXTRACT_ATTACHMENT_TEXT, localPath)
   },
 
   // 用户档案
