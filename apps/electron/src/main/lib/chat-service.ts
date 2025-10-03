@@ -24,6 +24,7 @@ import type { ImageAttachmentData } from '@proma/core'
 import { listChannels, decryptApiKey } from './channel-manager'
 import { appendMessage, updateConversationMeta, getConversationMessages } from './conversation-manager'
 import { readAttachmentAsBase64, isImageAttachment } from './attachment-service'
+import { extractTextFromAttachment, isDocumentAttachment } from './document-parser'
 
 /** 活跃的 AbortController 映射（conversationId → controller） */
 const activeControllers = new Map<string, AbortController>()
@@ -45,6 +46,75 @@ function getImageAttachmentData(attachments?: FileAttachment[]): ImageAttachment
       mediaType: att.mediaType,
       data: readAttachmentAsBase64(att.localPath),
     }))
+}
+
+// ===== 文档附件文本提取 =====
+
+/**
+ * 为单条消息提取文档附件的文本内容
+ *
+ * 将非图片附件的文本内容提取后，以结构化格式追加到消息文本后面。
+ * 图片附件由适配器层单独处理，这里只处理文档类附件。
+ *
+ * @param messageText 原始消息文本
+ * @param attachments 消息的附件列表
+ * @returns 包含文档文本的增强消息
+ */
+async function enrichMessageWithDocuments(
+  messageText: string,
+  attachments?: FileAttachment[],
+): Promise<string> {
+  if (!attachments || attachments.length === 0) return messageText
+
+  // 筛选出文档类附件（非图片）
+  const docAttachments = attachments.filter((att) => isDocumentAttachment(att.mediaType))
+  if (docAttachments.length === 0) return messageText
+
+  const parts: string[] = [messageText]
+
+  for (const att of docAttachments) {
+    try {
+      const text = await extractTextFromAttachment(att.localPath)
+      if (text.trim()) {
+        parts.push(`\n<file name="${att.filename}">\n${text}\n</file>`)
+      } else {
+        parts.push(`\n<file name="${att.filename}">\n[文件内容为空]\n</file>`)
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : '未知错误'
+      console.warn(`[聊天服务] 文档提取失败: ${att.filename}`, error)
+      parts.push(`\n<file name="${att.filename}">\n[文件内容提取失败: ${errorMsg}]\n</file>`)
+    }
+  }
+
+  return parts.join('')
+}
+
+/**
+ * 为历史消息列表注入文档附件文本
+ *
+ * 遍历历史消息，对包含文档附件的用户消息进行文本增强。
+ * 返回新的消息数组（不修改原始消息）。
+ */
+async function enrichHistoryWithDocuments(
+  history: ChatMessage[],
+): Promise<ChatMessage[]> {
+  const enriched: ChatMessage[] = []
+
+  for (const msg of history) {
+    // 只对包含附件的用户消息进行文档提取
+    if (msg.role === 'user' && msg.attachments && msg.attachments.length > 0) {
+      const hasDocuments = msg.attachments.some((att) => isDocumentAttachment(att.mediaType))
+      if (hasDocuments) {
+        const enrichedContent = await enrichMessageWithDocuments(msg.content, msg.attachments)
+        enriched.push({ ...msg, content: enrichedContent })
+        continue
+      }
+    }
+    enriched.push(msg)
+  }
+
+  return enriched
 }
 
 // ===== 上下文过滤 =====
@@ -152,7 +222,11 @@ export async function sendMessage(
   const fullHistory = getConversationMessages(conversationId)
   const filteredHistory = filterHistory(fullHistory, contextDividers, contextLength)
 
-  // 5. 创建 AbortController
+  // 5. 提取文档附件文本，注入到消息内容中
+  const enrichedHistory = await enrichHistoryWithDocuments(filteredHistory)
+  const enrichedUserMessage = await enrichMessageWithDocuments(userMessage, attachments)
+
+  // 6. 创建 AbortController
   const controller = new AbortController()
   activeControllers.set(conversationId, controller)
 
@@ -161,14 +235,14 @@ export async function sendMessage(
   let accumulatedReasoning = ''
 
   try {
-    // 6. 获取适配器 + 构建请求 + 执行流式 SSE
+    // 7. 获取适配器 + 构建请求 + 执行流式 SSE
     const adapter = getAdapter(channel.provider)
     const request = adapter.buildStreamRequest({
       baseUrl: channel.baseUrl,
       apiKey,
       modelId,
-      history: filteredHistory,
-      userMessage,
+      history: enrichedHistory,
+      userMessage: enrichedUserMessage,
       systemMessage,
       attachments,
       readImageAttachments: getImageAttachmentData,
@@ -200,7 +274,7 @@ export async function sendMessage(
       },
     })
 
-    // 7. 保存 assistant 消息
+    // 8. 保存 assistant 消息
     const assistantMsgId = randomUUID()
     const assistantMsg: ChatMessage = {
       id: assistantMsgId,
