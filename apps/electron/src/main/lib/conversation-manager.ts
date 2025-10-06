@@ -218,7 +218,7 @@ export function saveConversationMessages(id: string, messages: ChatMessage[]): v
  */
 export function updateConversationMeta(
   id: string,
-  updates: Partial<Pick<ConversationMeta, 'title' | 'modelId' | 'channelId' | 'contextDividers' | 'contextLength'>>,
+  updates: Partial<Pick<ConversationMeta, 'title' | 'modelId' | 'channelId' | 'contextDividers' | 'contextLength' | 'pinned'>>,
 ): ConversationMeta {
   const index = readIndex()
   const idx = index.conversations.findIndex((c) => c.id === id)

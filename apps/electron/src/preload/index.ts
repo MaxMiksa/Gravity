@@ -100,6 +100,9 @@ export interface ElectronAPI {
   /** 删除对话 */
   deleteConversation: (id: string) => Promise<void>
 
+  /** 切换对话置顶状态 */
+  togglePinConversation: (id: string) => Promise<ConversationMeta>
+
   // ===== 消息发送 =====
 
   /** 发送消息（触发 AI 流式响应） */
@@ -244,6 +247,10 @@ const electronAPI: ElectronAPI = {
 
   deleteConversation: (id: string) => {
     return ipcRenderer.invoke(CHAT_IPC_CHANNELS.DELETE_CONVERSATION, id)
+  },
+
+  togglePinConversation: (id: string) => {
+    return ipcRenderer.invoke(CHAT_IPC_CHANNELS.TOGGLE_PIN, id)
   },
 
   // 消息发送
