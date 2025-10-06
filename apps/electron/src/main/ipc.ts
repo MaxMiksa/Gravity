@@ -217,6 +217,17 @@ export function registerIpcHandlers(): void {
     }
   )
 
+  // 切换对话置顶状态
+  ipcMain.handle(
+    CHAT_IPC_CHANNELS.TOGGLE_PIN,
+    async (_, id: string): Promise<ConversationMeta> => {
+      const conversations = listConversations()
+      const current = conversations.find((c) => c.id === id)
+      if (!current) throw new Error(`对话不存在: ${id}`)
+      return updateConversationMeta(id, { pinned: !current.pinned })
+    }
+  )
+
   // 发送消息（触发 AI 流式响应）
   // 注意：通过 event.sender 获取 webContents 用于推送流式事件
   ipcMain.handle(
