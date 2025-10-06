@@ -294,6 +294,8 @@ export const CHAT_IPC_CHANNELS = {
   DELETE_ATTACHMENT: 'chat:delete-attachment',
   /** 打开文件选择对话框 */
   OPEN_FILE_DIALOG: 'chat:open-file-dialog',
+  /** 提取附件文档的文本内容 */
+  EXTRACT_ATTACHMENT_TEXT: 'chat:extract-attachment-text',
 
   // 流式事件（主进程 → 渲染进程推送）
   /** 内容片段 */
