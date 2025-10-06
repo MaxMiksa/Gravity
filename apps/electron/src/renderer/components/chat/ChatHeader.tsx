@@ -1,12 +1,12 @@
 /**
  * ChatHeader - 对话头部
  *
- * 显示对话标题（可点击编辑）+ 并排模式切换按钮。
+ * 显示对话标题（可点击编辑）+ 置顶按钮 + 并排模式切换按钮。
  */
 
 import * as React from 'react'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { Pencil, Check, X, Columns2 } from 'lucide-react'
+import { Pencil, Check, X, Columns2, Pin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -25,6 +25,8 @@ export function ChatHeader(): React.ReactElement | null {
   const inputRef = React.useRef<HTMLInputElement>(null)
 
   if (!conversation) return null
+
+  const isPinned = !!conversation.pinned
 
   /** 进入编辑模式 */
   const startEdit = (): void => {
@@ -50,6 +52,18 @@ export function ChatHeader(): React.ReactElement | null {
       console.error('[ChatHeader] 更新标题失败:', error)
     }
     setEditing(false)
+  }
+
+  /** 切换置顶状态 */
+  const handleTogglePin = async (): Promise<void> => {
+    try {
+      const updated = await window.electronAPI.togglePinConversation(conversation.id)
+      setConversations((prev) =>
+        prev.map((c) => (c.id === updated.id ? updated : c))
+      )
+    } catch (error) {
+      console.error('[ChatHeader] 切换置顶失败:', error)
+    }
   }
 
   /** 键盘事件 */
@@ -102,6 +116,27 @@ export function ChatHeader(): React.ReactElement | null {
           <Pencil className="size-3 opacity-40 group-hover:opacity-70 transition-opacity flex-shrink-0" />
         </button>
       )}
+
+      {/* 置顶按钮 */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className={cn(
+              'h-8 w-8 flex-shrink-0',
+              isPinned && 'bg-accent text-accent-foreground'
+            )}
+            onClick={handleTogglePin}
+          >
+            <Pin className="size-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          <p>{isPinned ? '取消置顶' : '置顶对话'}</p>
+        </TooltipContent>
+      </Tooltip>
 
       {/* 并排模式切换 - 始终显示，避免编辑时高度跳动 */}
       <Tooltip>

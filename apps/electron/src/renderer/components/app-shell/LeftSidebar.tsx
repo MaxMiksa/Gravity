@@ -4,12 +4,13 @@
  * 包含：
  * - Chat/Agent 模式切换器
  * - 导航菜单项（点击切换主内容区视图）
- * - 对话列表（新对话按钮 + 按 updatedAt 降序排列）
+ * - 置顶对话区域（可展开/收起）
+ * - 对话列表（新对话按钮 + 右键菜单 + 按 updatedAt 降序排列）
  */
 
 import * as React from 'react'
 import { useAtom, useSetAtom, useAtomValue } from 'jotai'
-import { MessagesSquare, Pin, Settings, Plus, Trash2 } from 'lucide-react'
+import { Pin, PinOff, Settings, Plus, Trash2, Pencil, ChevronDown, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ModeSwitcher } from './ModeSwitcher'
 import { activeViewAtom } from '@/atoms/active-view'
@@ -30,6 +31,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
 import type { ActiveView } from '@/atoms/active-view'
 import type { ConversationMeta } from '@proma/shared'
 
@@ -37,10 +45,12 @@ interface SidebarItemProps {
   icon: React.ReactNode
   label: string
   active?: boolean
+  /** 右侧额外元素（如展开/收起箭头） */
+  suffix?: React.ReactNode
   onClick?: () => void
 }
 
-function SidebarItem({ icon, label, active, onClick }: SidebarItemProps): React.ReactElement {
+function SidebarItem({ icon, label, active, suffix, onClick }: SidebarItemProps): React.ReactElement {
   return (
     <button
       onClick={onClick}
@@ -52,7 +62,8 @@ function SidebarItem({ icon, label, active, onClick }: SidebarItemProps): React.
       )}
     >
       <span className="flex-shrink-0 w-[18px] h-[18px]">{icon}</span>
-      <span>{label}</span>
+      <span className="flex-1">{label}</span>
+      {suffix}
     </button>
   )
 }
@@ -90,6 +101,36 @@ function formatDate(timestamp: number): string {
   return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
 }
 
+/** 日期分组标签 */
+type DateGroup = '今天' | '昨天' | '更早'
+
+/** 按 updatedAt 将对话分为 今天 / 昨天 / 更早 三组 */
+function groupByDate(conversations: ConversationMeta[]): Array<{ label: DateGroup; items: ConversationMeta[] }> {
+  const now = new Date()
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const yesterdayStart = todayStart - 86_400_000
+
+  const today: ConversationMeta[] = []
+  const yesterday: ConversationMeta[] = []
+  const earlier: ConversationMeta[] = []
+
+  for (const conv of conversations) {
+    if (conv.updatedAt >= todayStart) {
+      today.push(conv)
+    } else if (conv.updatedAt >= yesterdayStart) {
+      yesterday.push(conv)
+    } else {
+      earlier.push(conv)
+    }
+  }
+
+  const groups: Array<{ label: DateGroup; items: ConversationMeta[] }> = []
+  if (today.length > 0) groups.push({ label: '今天', items: today })
+  if (yesterday.length > 0) groups.push({ label: '昨天', items: yesterday })
+  if (earlier.length > 0) groups.push({ label: '更早', items: earlier })
+  return groups
+}
+
 export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
   const [activeView, setActiveView] = useAtom(activeViewAtom)
   const [activeItem, setActiveItem] = React.useState<SidebarItemId>('all-chats')
@@ -98,9 +139,23 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
   const [hoveredId, setHoveredId] = React.useState<string | null>(null)
   /** 待删除对话 ID，非空时显示确认弹窗 */
   const [pendingDeleteId, setPendingDeleteId] = React.useState<string | null>(null)
+  /** 置顶区域展开/收起 */
+  const [pinnedExpanded, setPinnedExpanded] = React.useState(true)
   const setUserProfile = useSetAtom(userProfileAtom)
   const selectedModel = useAtomValue(selectedModelAtom)
   const streamingIds = useAtomValue(streamingConversationIdsAtom)
+
+  /** 置顶对话列表 */
+  const pinnedConversations = React.useMemo(
+    () => conversations.filter((c) => c.pinned),
+    [conversations]
+  )
+
+  /** 对话按日期分组 */
+  const conversationGroups = React.useMemo(
+    () => groupByDate(conversations),
+    [conversations]
+  )
 
   // 初始加载对话列表 + 用户档案
   React.useEffect(() => {
@@ -116,6 +171,11 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
 
   /** 处理导航项点击 */
   const handleItemClick = (item: SidebarItemId): void => {
+    if (item === 'pinned') {
+      // 置顶按钮仅切换展开/收起，不改变 activeView
+      setPinnedExpanded((prev) => !prev)
+      return
+    }
     setActiveItem(item)
     setActiveView(ITEM_TO_VIEW[item])
   }
@@ -153,8 +213,7 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
   }
 
   /** 请求删除对话（弹出确认框） */
-  const handleRequestDelete = (e: React.MouseEvent, id: string): void => {
-    e.stopPropagation()
+  const handleRequestDelete = (id: string): void => {
     setPendingDeleteId(id)
   }
 
@@ -167,6 +226,18 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
       )
     } catch (error) {
       console.error('[侧边栏] 重命名对话失败:', error)
+    }
+  }
+
+  /** 切换对话置顶状态 */
+  const handleTogglePin = async (id: string): Promise<void> => {
+    try {
+      const updated = await window.electronAPI.togglePinConversation(id)
+      setConversations((prev) =>
+        prev.map((c) => (c.id === updated.id ? updated : c))
+      )
+    } catch (error) {
+      console.error('[侧边栏] 切换置顶失败:', error)
     }
   }
 
@@ -196,7 +267,7 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
         {/* 模式切换器 */}
         <ModeSwitcher />
       </div>
-      
+
       {/* 新对话按钮 */}
       <div className="px-3 pt-3">
         <button
@@ -213,36 +284,68 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
         <SidebarItem
           icon={<Pin size={16} />}
           label="置顶对话"
-          active={activeItem === 'pinned'}
+          suffix={
+            pinnedConversations.length > 0 ? (
+              pinnedExpanded
+                ? <ChevronDown size={14} className="text-foreground/40" />
+                : <ChevronRight size={14} className="text-foreground/40" />
+            ) : undefined
+          }
           onClick={() => handleItemClick('pinned')}
         />
-        {/* <SidebarItem
-          icon={<MessagesSquare size={16} />}
-          label="对话列表"
-          active={activeItem === 'all-chats'}
-          onClick={() => handleItemClick('all-chats')}
-        /> */}
       </div>
 
-
-      {/* 对话列表 */}
-      <div className="flex-1 overflow-y-auto px-3 pt-2 pb-3">
-        <div className="flex flex-col gap-0.5">
-          {conversations.map((conv) => (
-            <ConversationItem
-              key={conv.id}
-              conversation={conv}
-              active={conv.id === currentConversationId}
-              hovered={conv.id === hoveredId}
-              streaming={streamingIds.has(conv.id)}
-              onSelect={() => handleSelectConversation(conv.id)}
-              onDelete={(e) => handleRequestDelete(e, conv.id)}
-              onRename={handleRename}
-              onMouseEnter={() => setHoveredId(conv.id)}
-              onMouseLeave={() => setHoveredId(null)}
-            />
-          ))}
+      {/* 置顶对话区域 */}
+      {pinnedExpanded && pinnedConversations.length > 0 && (
+        <div className="px-3 pt-1 pb-1">
+          <div className="flex flex-col gap-0.5 pl-1 border-l-2 border-primary/20 ml-2">
+            {pinnedConversations.map((conv) => (
+              <ConversationItem
+                key={`pinned-${conv.id}`}
+                conversation={conv}
+                active={conv.id === currentConversationId}
+                hovered={conv.id === hoveredId}
+                streaming={streamingIds.has(conv.id)}
+                showPinIcon={false}
+                onSelect={() => handleSelectConversation(conv.id)}
+                onRequestDelete={() => handleRequestDelete(conv.id)}
+                onRename={handleRename}
+                onTogglePin={handleTogglePin}
+                onMouseEnter={() => setHoveredId(conv.id)}
+                onMouseLeave={() => setHoveredId(null)}
+              />
+            ))}
+          </div>
         </div>
+      )}
+
+      {/* 对话列表（按日期分组） */}
+      <div className="flex-1 overflow-y-auto px-3 pt-2 pb-3 scrollbar-none">
+        {conversationGroups.map((group) => (
+          <div key={group.label} className="mb-1">
+            <div className="px-3 pt-2 pb-1 text-[11px] font-medium text-foreground/40 select-none">
+              {group.label}
+            </div>
+            <div className="flex flex-col gap-0.5">
+              {group.items.map((conv) => (
+                <ConversationItem
+                  key={conv.id}
+                  conversation={conv}
+                  active={conv.id === currentConversationId}
+                  hovered={conv.id === hoveredId}
+                  streaming={streamingIds.has(conv.id)}
+                  showPinIcon={!!conv.pinned}
+                  onSelect={() => handleSelectConversation(conv.id)}
+                  onRequestDelete={() => handleRequestDelete(conv.id)}
+                  onRename={handleRename}
+                  onTogglePin={handleTogglePin}
+                  onMouseEnter={() => setHoveredId(conv.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* 底部设置 */}
@@ -289,9 +392,12 @@ interface ConversationItemProps {
   active: boolean
   hovered: boolean
   streaming: boolean
+  /** 是否在标题旁显示 Pin 图标 */
+  showPinIcon: boolean
   onSelect: () => void
-  onDelete: (e: React.MouseEvent) => void
+  onRequestDelete: () => void
   onRename: (id: string, newTitle: string) => Promise<void>
+  onTogglePin: (id: string) => Promise<void>
   onMouseEnter: () => void
   onMouseLeave: () => void
 }
@@ -301,9 +407,11 @@ function ConversationItem({
   active,
   hovered,
   streaming,
+  showPinIcon,
   onSelect,
-  onDelete,
+  onRequestDelete,
   onRename,
+  onTogglePin,
   onMouseEnter,
   onMouseLeave,
 }: ConversationItemProps): React.ReactElement {
@@ -342,64 +450,103 @@ function ConversationItem({
     }
   }
 
-  return (
-    <button
-      onClick={onSelect}
-      onDoubleClick={(e) => {
-        e.stopPropagation()
-        startEdit()
-      }}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      className={cn(
-        'w-full flex items-center gap-2 px-3 py-[7px] rounded-[10px] transition-colors duration-100 titlebar-no-drag text-left',
-        active
-          ? 'bg-foreground/[0.08] dark:bg-foreground/[0.08] shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
-          : 'hover:bg-foreground/[0.04] dark:hover:bg-foreground/[0.04]'
-      )}
-    >
-      <div className="flex-1 min-w-0">
-        {editing ? (
-          <input
-            ref={inputRef}
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onBlur={saveTitle}
-            onClick={(e) => e.stopPropagation()}
-            className="w-full bg-transparent text-[13px] leading-5 text-foreground border-b border-primary/50 outline-none px-0 py-0"
-            maxLength={100}
-          />
-        ) : (
-          <div className={cn(
-            'truncate text-[13px] leading-5 flex items-center gap-1.5',
-            active ? 'text-foreground' : 'text-foreground/80'
-          )}>
-            {/* 流式输出绿色呼吸点指示器 */}
-            {streaming && (
-              <span className="relative flex-shrink-0 size-2">
-                <span className="absolute inset-0 rounded-full bg-green-500/60 animate-ping" />
-                <span className="relative block size-2 rounded-full bg-green-500" />
-              </span>
-            )}
-            <span className="truncate">{conversation.title}</span>
-          </div>
-        )}
-        <div className="text-[11px] text-foreground/40 mt-0.5">
-          {formatDate(conversation.updatedAt)}
-        </div>
-      </div>
+  const isPinned = !!conversation.pinned
 
-      {/* 删除按钮（hover 时显示，编辑时隐藏） */}
-      {hovered && !editing && (
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
         <button
-          onClick={onDelete}
-          className="flex-shrink-0 p-1 rounded-md text-foreground/30 hover:bg-destructive/10 hover:text-destructive transition-colors duration-100"
-          title="删除对话"
+          onClick={onSelect}
+          onDoubleClick={(e) => {
+            e.stopPropagation()
+            startEdit()
+          }}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          className={cn(
+            'w-full flex items-center gap-2 px-3 py-[7px] rounded-[10px] transition-colors duration-100 titlebar-no-drag text-left',
+            active
+              ? 'bg-foreground/[0.08] dark:bg-foreground/[0.08] shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
+              : 'hover:bg-foreground/[0.04] dark:hover:bg-foreground/[0.04]'
+          )}
         >
-          <Trash2 size={13} />
+          <div className="flex-1 min-w-0">
+            {editing ? (
+              <input
+                ref={inputRef}
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={saveTitle}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full bg-transparent text-[13px] leading-5 text-foreground border-b border-primary/50 outline-none px-0 py-0"
+                maxLength={100}
+              />
+            ) : (
+              <div className={cn(
+                'truncate text-[13px] leading-5 flex items-center gap-1.5',
+                active ? 'text-foreground' : 'text-foreground/80'
+              )}>
+                {/* 流式输出绿色呼吸点指示器 */}
+                {streaming && (
+                  <span className="relative flex-shrink-0 size-2">
+                    <span className="absolute inset-0 rounded-full bg-green-500/60 animate-ping" />
+                    <span className="relative block size-2 rounded-full bg-green-500" />
+                  </span>
+                )}
+                {/* 置顶标记 */}
+                {showPinIcon && (
+                  <Pin size={11} className="flex-shrink-0 text-primary/60" />
+                )}
+                <span className="truncate">{conversation.title}</span>
+              </div>
+            )}
+            <div className="text-[11px] text-foreground/40 mt-0.5">
+              {formatDate(conversation.updatedAt)}
+            </div>
+          </div>
+
+          {/* 删除按钮（hover 时显示，编辑时隐藏） */}
+          {hovered && !editing && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onRequestDelete()
+              }}
+              className="flex-shrink-0 p-1 rounded-md text-foreground/30 hover:bg-destructive/10 hover:text-destructive transition-colors duration-100"
+              title="删除对话"
+            >
+              <Trash2 size={13} />
+            </button>
+          )}
         </button>
-      )}
-    </button>
+      </ContextMenuTrigger>
+
+      {/* 右键菜单 */}
+      <ContextMenuContent className="w-40">
+        <ContextMenuItem
+          className="gap-2 text-[13px]"
+          onSelect={() => onTogglePin(conversation.id)}
+        >
+          {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
+          {isPinned ? '取消置顶' : '置顶对话'}
+        </ContextMenuItem>
+        <ContextMenuItem
+          className="gap-2 text-[13px]"
+          onSelect={startEdit}
+        >
+          <Pencil size={14} />
+          重命名
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          className="gap-2 text-[13px] text-destructive focus:text-destructive"
+          onSelect={onRequestDelete}
+        >
+          <Trash2 size={14} />
+          删除对话
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   )
 }
