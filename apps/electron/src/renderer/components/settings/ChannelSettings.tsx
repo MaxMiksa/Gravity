@@ -6,9 +6,9 @@
  */
 
 import * as React from 'react'
-import { Plus, Pencil, Trash2, Power, PowerOff } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { PROVIDER_LABELS } from '@proma/shared'
 import type { Channel } from '@proma/shared'
 import { SettingsSection, SettingsCard, SettingsRow } from './primitives'
@@ -48,6 +48,16 @@ export function ChannelSettings(): React.ReactElement {
       await loadChannels()
     } catch (error) {
       console.error('[渠道设置] 删除渠道失败:', error)
+    }
+  }
+
+  /** 切换渠道启用状态 */
+  const handleToggle = async (channel: Channel): Promise<void> => {
+    try {
+      await window.electronAPI.updateChannel(channel.id, { enabled: !channel.enabled })
+      await loadChannels()
+    } catch (error) {
+      console.error('[渠道设置] 切换渠道状态失败:', error)
     }
   }
 
@@ -106,6 +116,7 @@ export function ChannelSettings(): React.ReactElement {
                 setViewMode('edit')
               }}
               onDelete={() => handleDelete(channel)}
+              onToggle={() => handleToggle(channel)}
             />
           ))}
         </SettingsCard>
@@ -120,9 +131,10 @@ interface ChannelRowProps {
   channel: Channel
   onEdit: () => void
   onDelete: () => void
+  onToggle: () => void
 }
 
-function ChannelRow({ channel, onEdit, onDelete }: ChannelRowProps): React.ReactElement {
+function ChannelRow({ channel, onEdit, onDelete, onToggle }: ChannelRowProps): React.ReactElement {
   const enabledCount = channel.models.filter((m) => m.enabled).length
   const description = [
     PROVIDER_LABELS[channel.provider],
@@ -138,15 +150,11 @@ function ChannelRow({ channel, onEdit, onDelete }: ChannelRowProps): React.React
       className="group"
     >
       <div className="flex items-center gap-2">
-        {/* 启用状态标识 */}
-        <div
-          className={cn(
-            'flex-shrink-0',
-            channel.enabled ? 'text-emerald-500' : 'text-muted-foreground'
-          )}
-        >
-          {channel.enabled ? <Power size={16} /> : <PowerOff size={16} />}
-        </div>
+        {/* 启用/关闭开关 */}
+        <Switch
+          checked={channel.enabled}
+          onCheckedChange={onToggle}
+        />
 
         {/* 操作按钮 */}
         <button
