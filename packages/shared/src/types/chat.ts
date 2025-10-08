@@ -122,6 +122,8 @@ export interface ConversationMeta {
   contextDividers?: string[]
   /** 上下文长度（轮数），'infinite' 表示全部包含 */
   contextLength?: number | 'infinite'
+  /** 是否置顶 */
+  pinned?: boolean
   /** 创建时间戳 */
   createdAt: number
   /** 更新时间戳 */
@@ -296,6 +298,10 @@ export const CHAT_IPC_CHANNELS = {
   OPEN_FILE_DIALOG: 'chat:open-file-dialog',
   /** 提取附件文档的文本内容 */
   EXTRACT_ATTACHMENT_TEXT: 'chat:extract-attachment-text',
+
+  // 置顶管理
+  /** 切换对话置顶状态 */
+  TOGGLE_PIN: 'chat:toggle-pin',
 
   // 流式事件（主进程 → 渲染进程推送）
   /** 内容片段 */
