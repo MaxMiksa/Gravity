@@ -137,6 +137,16 @@ export function listChannels(): Channel[] {
 }
 
 /**
+ * 按 ID 获取渠道
+ *
+ * 返回的渠道中 apiKey 保持加密状态。
+ */
+export function getChannelById(id: string): Channel | undefined {
+  const config = readConfig()
+  return config.channels.find((c) => c.id === id)
+}
+
+/**
  * 创建新渠道
  *
  * @param input 渠道创建数据（apiKey 为明文，会自动加密）
@@ -253,6 +263,11 @@ export async function testChannel(channelId: string): Promise<ChannelTestResult>
         return await testAnthropic(channel.baseUrl, apiKey)
       case 'openai':
       case 'deepseek':
+      case 'moonshot':
+      case 'zhipu':
+      case 'minimax':
+      case 'doubao':
+      case 'qwen':
       case 'custom':
         return await testOpenAICompatible(channel.baseUrl, apiKey)
       case 'google':
@@ -281,7 +296,7 @@ async function testAnthropic(baseUrl: string, apiKey: string): Promise<ChannelTe
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-5-20250514',
+      model: 'claude-sonnet-4-5-20250929',
       max_tokens: 1,
       messages: [{ role: 'user', content: 'hi' }],
     }),
@@ -362,6 +377,11 @@ export async function testChannelDirect(input: FetchModelsInput): Promise<Channe
         return await testAnthropic(input.baseUrl, input.apiKey)
       case 'openai':
       case 'deepseek':
+      case 'moonshot':
+      case 'zhipu':
+      case 'minimax':
+      case 'doubao':
+      case 'qwen':
       case 'custom':
         return await testOpenAICompatible(input.baseUrl, input.apiKey)
       case 'google':
@@ -390,6 +410,11 @@ export async function fetchModels(input: FetchModelsInput): Promise<FetchModelsR
         return await fetchAnthropicModels(input.baseUrl, input.apiKey)
       case 'openai':
       case 'deepseek':
+      case 'moonshot':
+      case 'zhipu':
+      case 'minimax':
+      case 'doubao':
+      case 'qwen':
       case 'custom':
         return await fetchOpenAICompatibleModels(input.baseUrl, input.apiKey)
       case 'google':

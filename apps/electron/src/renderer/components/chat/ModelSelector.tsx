@@ -22,16 +22,17 @@ import {
   currentConversationIdAtom,
   conversationsAtom,
 } from '@/atoms/chat-atoms'
-import { getModelLogo, getProviderLogo } from '@/lib/model-logo'
+import { getModelLogo, getChannelLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
 import type { Channel, ModelOption } from '@proma/shared'
 
 /** 从渠道列表构建扁平化的模型选项 */
-function buildModelOptions(channels: Channel[]): ModelOption[] {
+function buildModelOptions(channels: Channel[], filterChannelId?: string): ModelOption[] {
   const options: ModelOption[] = []
 
   for (const channel of channels) {
     if (!channel.enabled) continue
+    if (filterChannelId && channel.id !== filterChannelId) continue
 
     for (const model of channel.models) {
       if (!model.enabled) continue
@@ -63,13 +64,30 @@ function groupByChannel(options: ModelOption[]): Map<string, ModelOption[]> {
   return groups
 }
 
-export function ModelSelector(): React.ReactElement {
-  const [selectedModel, setSelectedModel] = useAtom(selectedModelAtom)
+/** ModelSelector 可选属性 */
+interface ModelSelectorProps {
+  /** 仅显示此渠道的模型 */
+  filterChannelId?: string
+  /** 外部选中模型（不传则用内部 selectedModelAtom） */
+  externalSelectedModel?: { channelId: string; modelId: string } | null
+  /** 外部选择回调 */
+  onModelSelect?: (option: ModelOption) => void
+}
+
+export function ModelSelector({
+  filterChannelId,
+  externalSelectedModel,
+  onModelSelect,
+}: ModelSelectorProps = {}): React.ReactElement {
+  const [internalSelectedModel, setInternalSelectedModel] = useAtom(selectedModelAtom)
   const currentConversationId = useAtomValue(currentConversationIdAtom)
   const setConversations = useSetAtom(conversationsAtom)
   const [channels, setChannels] = React.useState<Channel[]>([])
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState('')
+
+  // 外部模型优先，否则用内部 atom
+  const selectedModel = externalSelectedModel !== undefined ? externalSelectedModel : internalSelectedModel
 
   // 加载渠道列表
   React.useEffect(() => {
@@ -84,7 +102,7 @@ export function ModelSelector(): React.ReactElement {
     }
   }, [open])
 
-  const modelOptions = React.useMemo(() => buildModelOptions(channels), [channels])
+  const modelOptions = React.useMemo(() => buildModelOptions(channels, filterChannelId), [channels, filterChannelId])
   const grouped = React.useMemo(() => groupByChannel(modelOptions), [modelOptions])
 
   // 搜索过滤
@@ -143,7 +161,13 @@ export function ModelSelector(): React.ReactElement {
 
   /** 选择模型并持久化到当前对话 */
   const handleSelect = (option: ModelOption): void => {
-    setSelectedModel({ channelId: option.channelId, modelId: option.modelId })
+    if (onModelSelect) {
+      onModelSelect(option)
+      setOpen(false)
+      return
+    }
+
+    setInternalSelectedModel({ channelId: option.channelId, modelId: option.modelId })
     setOpen(false)
 
     // 将模型/渠道选择保存到当前对话元数据
@@ -197,7 +221,7 @@ export function ModelSelector(): React.ReactElement {
           <img
             src={getModelLogo(currentModelInfo.modelId, currentModelInfo.provider)}
             alt={currentModelInfo.modelName}
-            className="size-4 rounded-full object-cover"
+            className="size-4 rounded object-cover"
           />
         ) : (
           <Cpu className="size-3.5" />
@@ -247,9 +271,9 @@ export function ModelSelector(): React.ReactElement {
                     {/* 供应商标题行 - 灰色背景 */}
                     <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 border-b border-border/30">
                       <img
-                        src={getProviderLogo(first.provider)}
+                        src={getChannelLogo(channels.find((c) => c.id === channelId)?.baseUrl ?? '')}
                         alt={first.channelName}
-                        className="size-4 rounded-full object-cover"
+                        className="size-5 rounded object-cover"
                       />
                       <span className="text-sm font-medium text-muted-foreground">
                         {first.channelName}
@@ -284,7 +308,7 @@ export function ModelSelector(): React.ReactElement {
                           <img
                             src={getModelLogo(option.modelId, option.provider)}
                             alt={option.modelName}
-                            className="size-4 rounded-full object-cover flex-shrink-0"
+                            className="size-5 rounded object-cover flex-shrink-0"
                           />
                           <span className={cn(
                             'flex-1 text-sm truncate',
