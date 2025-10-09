@@ -8,7 +8,17 @@
 /**
  * 支持的 AI 供应商类型
  */
-export type ProviderType = 'anthropic' | 'openai' | 'deepseek' | 'google' | 'custom'
+export type ProviderType =
+  | 'anthropic'
+  | 'openai'
+  | 'deepseek'
+  | 'google'
+  | 'moonshot'
+  | 'zhipu'
+  | 'minimax'
+  | 'doubao'
+  | 'qwen'
+  | 'custom'
 
 /**
  * 各供应商的默认 Base URL
@@ -18,6 +28,11 @@ export const PROVIDER_DEFAULT_URLS: Record<ProviderType, string> = {
   openai: 'https://api.openai.com/v1',
   deepseek: 'https://api.deepseek.com',
   google: 'https://generativelanguage.googleapis.com',
+  moonshot: 'https://api.moonshot.cn/v1',
+  zhipu: 'https://open.bigmodel.cn/api/paas/v4',
+  minimax: 'https://api.minimax.chat/v1',
+  doubao: 'https://ark.cn-beijing.volces.com/api/v3',
+  qwen: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
   custom: '',
 }
 
@@ -29,6 +44,11 @@ export const PROVIDER_LABELS: Record<ProviderType, string> = {
   openai: 'OpenAI',
   deepseek: 'DeepSeek',
   google: 'Google',
+  moonshot: 'Moonshot / Kimi',
+  zhipu: '智谱 AI',
+  minimax: 'MiniMax',
+  doubao: '豆包',
+  qwen: '通义千问',
   custom: 'OpenAI 兼容格式',
 }
 
@@ -36,7 +56,7 @@ export const PROVIDER_LABELS: Record<ProviderType, string> = {
  * 渠道中的模型配置
  */
 export interface ChannelModel {
-  /** 模型唯一标识（如 claude-sonnet-4-5-20250514） */
+  /** 模型唯一标识（如 claude-sonnet-4-5-20250929） */
   id: string
   /** 模型显示名称 */
   name: string
