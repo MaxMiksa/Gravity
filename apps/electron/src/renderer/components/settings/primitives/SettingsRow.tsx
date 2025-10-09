@@ -12,6 +12,8 @@ import { LABEL_CLASS, DESCRIPTION_CLASS, ROW_CLASS } from './SettingsUIConstants
 interface SettingsRowProps {
   /** 行标签 */
   label: string
+  /** 标签左侧图标（可选） */
+  icon?: React.ReactNode
   /** 行描述（可选） */
   description?: string
   /** 右侧控件 */
@@ -22,12 +24,14 @@ interface SettingsRowProps {
 
 export function SettingsRow({
   label,
+  icon,
   description,
   children,
   className,
 }: SettingsRowProps): React.ReactElement {
   return (
     <div className={cn(ROW_CLASS, className)}>
+      {icon && <div className="flex-shrink-0 mr-3">{icon}</div>}
       <div className="flex-1 min-w-0 mr-4">
         <div className={LABEL_CLASS}>{label}</div>
         {description && (

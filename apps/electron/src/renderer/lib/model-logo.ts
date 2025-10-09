@@ -103,6 +103,9 @@ import SparkDeskDarkLogo from '@/assets/models/sparkdesk_dark.png'
 import StepLogo from '@/assets/models/step.png'
 import StepDarkLogo from '@/assets/models/step_dark.png'
 
+// MiniMax
+import MiniMaxLogo from '@/assets/models/minimax.png'
+
 // Cohere
 import CohereLogo from '@/assets/models/cohere.png'
 import CohereDarkLogo from '@/assets/models/cohere_dark.png'
@@ -205,6 +208,9 @@ const MODEL_LOGO_MAP: Record<string, string> = {
   // === Step / 阶跃星辰 ===
   step: StepLogo,
 
+  // === MiniMax ===
+  minimax: MiniMaxLogo,
+
   // === Cohere ===
   cohere: CohereLogo,
   command: CohereLogo,
@@ -224,8 +230,38 @@ const PROVIDER_LOGO_MAP: Record<ProviderType, string> = {
   openai: OpenAILogo,
   deepseek: DeepSeekLogo,
   google: GeminiLogo,
+  moonshot: MoonshotLogo,
+  zhipu: ZhipuLogo,
+  minimax: MiniMaxLogo,
+  doubao: DoubaoLogo,
+  qwen: QwenLogo,
   custom: DefaultLogo,
 }
+
+/**
+ * Base URL 域名 → Logo 映射
+ *
+ * key 为正则表达式（忽略大小写），匹配 Base URL 域名部分。
+ * 优先级高于 ProviderType，用于识别用户通过兼容格式接入的实际供应商。
+ */
+const URL_LOGO_MAP: Array<[RegExp, string]> = [
+  [/moonshot\.cn|kimi/i, MoonshotLogo],
+  [/bigmodel\.cn|zhipuai/i, ZhipuLogo],
+  [/minimax/i, MiniMaxLogo],
+  [/volces\.com|volcengine/i, DoubaoLogo],
+  [/dashscope|aliyuncs/i, QwenLogo],
+  [/deepseek/i, DeepSeekLogo],
+  [/anthropic/i, ClaudeLogo],
+  [/openai\.com/i, OpenAILogo],
+  [/googleapis|generativelanguage/i, GeminiLogo],
+  [/grok|x\.ai/i, GrokLogo],
+  [/stepfun/i, StepLogo],
+  [/cohere/i, CohereLogo],
+  [/spark-api|xfyun/i, SparkDeskLogo],
+  [/hunyuan/i, HunyuanLogo],
+  [/ernie|baidu/i, WenxinLogo],
+  [/yi\.com|lingyiwanwu/i, YiLogo],
+]
 
 // ===== 公共 API =====
 
@@ -272,6 +308,25 @@ export function getModelLogo(modelId: string, provider?: ProviderType): string {
  */
 export function getProviderLogo(provider: ProviderType): string {
   return PROVIDER_LOGO_MAP[provider] ?? DefaultLogo
+}
+
+/**
+ * 根据 Base URL 获取渠道 Logo
+ *
+ * 按 URL 域名匹配实际供应商，未匹配到则返回默认图标。
+ * 适用于渠道列表展示，即使用户用兼容格式接入也能识别真实供应商。
+ *
+ * @param baseUrl 渠道的 Base URL
+ */
+export function getChannelLogo(baseUrl: string): string {
+  if (baseUrl) {
+    for (const [regex, logo] of URL_LOGO_MAP) {
+      if (regex.test(baseUrl)) {
+        return logo
+      }
+    }
+  }
+  return DefaultLogo
 }
 
 /** 默认模型图标 */
