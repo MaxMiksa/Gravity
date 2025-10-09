@@ -53,7 +53,7 @@ interface ChannelFormProps {
 }
 
 /** 所有可选供应商 */
-const PROVIDER_OPTIONS: ProviderType[] = ['anthropic', 'openai', 'deepseek', 'google', 'custom']
+const PROVIDER_OPTIONS: ProviderType[] = ['anthropic', 'openai', 'deepseek', 'google', 'moonshot', 'zhipu', 'minimax', 'doubao', 'qwen', 'custom']
 
 /** 供应商选项（用于 SettingsSelect） */
 const PROVIDER_SELECT_OPTIONS = PROVIDER_OPTIONS.map((p) => ({
@@ -67,6 +67,11 @@ const PROVIDER_CHAT_PATHS: Record<ProviderType, string> = {
   openai: '/chat/completions',
   deepseek: '/chat/completions',
   google: '/v1beta/models/{model}:generateContent',
+  moonshot: '/chat/completions',
+  zhipu: '/chat/completions',
+  minimax: '/chat/completions',
+  doubao: '/chat/completions',
+  qwen: '/chat/completions',
   custom: '/chat/completions',
 }
 
