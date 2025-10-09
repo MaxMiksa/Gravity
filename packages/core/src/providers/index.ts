@@ -26,7 +26,12 @@ const adapterRegistry = new Map<ProviderType, ProviderAdapter>([
   ['anthropic', new AnthropicAdapter()],
   ['openai', new OpenAIAdapter()],
   ['deepseek', new OpenAIAdapter()],      // DeepSeek 使用 OpenAI 兼容协议
-  ['custom', new OpenAIAdapter()],         // 自定义也使用 OpenAI 兼容协议
+  ['moonshot', new OpenAIAdapter()],      // Moonshot/Kimi 使用 OpenAI 兼容协议
+  ['zhipu', new OpenAIAdapter()],         // 智谱 AI 使用 OpenAI 兼容协议
+  ['minimax', new OpenAIAdapter()],       // MiniMax 使用 OpenAI 兼容协议
+  ['doubao', new OpenAIAdapter()],        // 豆包使用 OpenAI 兼容协议
+  ['qwen', new OpenAIAdapter()],          // 通义千问使用 OpenAI 兼容协议
+  ['custom', new OpenAIAdapter()],        // 自定义也使用 OpenAI 兼容协议
   ['google', new GoogleAdapter()],
 ])
 
