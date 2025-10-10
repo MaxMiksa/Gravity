@@ -4,8 +4,8 @@
  * 负责注册主进程和渲染进程之间的通信处理器
  */
 
-import { ipcMain, nativeTheme, BrowserWindow } from 'electron'
-import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS } from '@proma/shared'
+import { ipcMain, nativeTheme, shell, BrowserWindow } from 'electron'
+import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS } from '@proma/shared'
 import { USER_PROFILE_IPC_CHANNELS, SETTINGS_IPC_CHANNELS } from '../types'
 import type {
   RuntimeStatus,
@@ -24,6 +24,11 @@ import type {
   AttachmentSaveResult,
   FileDialogResult,
   RecentMessagesResult,
+  AgentSessionMeta,
+  AgentMessage,
+  AgentSendInput,
+  AgentWorkspace,
+  AgentGenerateTitleInput,
 } from '@proma/shared'
 import type { UserProfile, AppSettings } from '../types'
 import { getRuntimeStatus, getGitRepoStatus } from './lib/runtime-init'
@@ -57,6 +62,21 @@ import {
 import { extractTextFromAttachment } from './lib/document-parser'
 import { getUserProfile, updateUserProfile } from './lib/user-profile-service'
 import { getSettings, updateSettings } from './lib/settings-service'
+import {
+  listAgentSessions,
+  createAgentSession,
+  getAgentSessionMessages,
+  updateAgentSessionMeta,
+  deleteAgentSession,
+} from './lib/agent-session-manager'
+import { runAgent, stopAgent, generateAgentTitle } from './lib/agent-service'
+import {
+  listAgentWorkspaces,
+  createAgentWorkspace,
+  updateAgentWorkspace,
+  deleteAgentWorkspace,
+  ensureDefaultWorkspace,
+} from './lib/agent-workspace-manager'
 
 /**
  * 注册 IPC 处理器
@@ -90,6 +110,23 @@ export function registerIpcHandlers(): void {
       }
 
       return getGitRepoStatus(dirPath)
+    }
+  )
+
+  // 在系统默认浏览器中打开外部链接
+  ipcMain.handle(
+    IPC_CHANNELS.OPEN_EXTERNAL,
+    async (_, url: string): Promise<void> => {
+      if (!url || typeof url !== 'string') {
+        console.warn('[IPC] shell:open-external 收到无效的 URL')
+        return
+      }
+      // 仅允许 http/https 协议，防止安全风险
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        console.warn('[IPC] shell:open-external 仅支持 http/https 协议:', url)
+        return
+      }
+      await shell.openExternal(url)
     }
   )
 
@@ -363,6 +400,109 @@ export function registerIpcHandlers(): void {
       win.webContents.send(SETTINGS_IPC_CHANNELS.ON_SYSTEM_THEME_CHANGED, isDark)
     })
   })
+
+  // ===== Agent 会话管理相关 =====
+
+  // 获取 Agent 会话列表
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.LIST_SESSIONS,
+    async (): Promise<AgentSessionMeta[]> => {
+      return listAgentSessions()
+    }
+  )
+
+  // 创建 Agent 会话
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.CREATE_SESSION,
+    async (_, title?: string, channelId?: string, workspaceId?: string): Promise<AgentSessionMeta> => {
+      return createAgentSession(title, channelId, workspaceId)
+    }
+  )
+
+  // 获取 Agent 会话消息
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GET_MESSAGES,
+    async (_, id: string): Promise<AgentMessage[]> => {
+      return getAgentSessionMessages(id)
+    }
+  )
+
+  // 更新 Agent 会话标题
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.UPDATE_TITLE,
+    async (_, id: string, title: string): Promise<AgentSessionMeta> => {
+      return updateAgentSessionMeta(id, { title })
+    }
+  )
+
+  // 生成 Agent 会话标题
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GENERATE_TITLE,
+    async (_, input: AgentGenerateTitleInput): Promise<string | null> => {
+      return generateAgentTitle(input)
+    }
+  )
+
+  // 删除 Agent 会话
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.DELETE_SESSION,
+    async (_, id: string): Promise<void> => {
+      return deleteAgentSession(id)
+    }
+  )
+
+  // ===== Agent 工作区管理相关 =====
+
+  // 确保默认工作区存在
+  ensureDefaultWorkspace()
+
+  // 获取 Agent 工作区列表
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.LIST_WORKSPACES,
+    async (): Promise<AgentWorkspace[]> => {
+      return listAgentWorkspaces()
+    }
+  )
+
+  // 创建 Agent 工作区
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.CREATE_WORKSPACE,
+    async (_, name: string): Promise<AgentWorkspace> => {
+      return createAgentWorkspace(name)
+    }
+  )
+
+  // 更新 Agent 工作区
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.UPDATE_WORKSPACE,
+    async (_, id: string, updates: { name: string }): Promise<AgentWorkspace> => {
+      return updateAgentWorkspace(id, updates)
+    }
+  )
+
+  // 删除 Agent 工作区
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.DELETE_WORKSPACE,
+    async (_, id: string): Promise<void> => {
+      return deleteAgentWorkspace(id)
+    }
+  )
+
+  // 发送 Agent 消息（触发 Agent SDK 流式响应）
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.SEND_MESSAGE,
+    async (event, input: AgentSendInput): Promise<void> => {
+      await runAgent(input, event.sender)
+    }
+  )
+
+  // 中止 Agent 执行
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.STOP_AGENT,
+    async (_, sessionId: string): Promise<void> => {
+      stopAgent(sessionId)
+    }
+  )
 
   console.log('[IPC] IPC 处理器注册完成')
 }

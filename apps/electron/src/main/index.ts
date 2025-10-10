@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, BrowserWindow, Menu, shell } from 'electron'
 import { join } from 'path'
 import { existsSync } from 'fs'
 import { createApplicationMenu } from './menu'
@@ -63,6 +63,24 @@ function createWindow(): void {
   // Show main window when ready
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show()
+  })
+
+  // 拦截页面内导航，外部链接用系统浏览器打开，防止 Electron 窗口被覆盖
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    // 允许开发模式下的 Vite HMR 热重载
+    if (isDev && url.startsWith('http://localhost:')) return
+    event.preventDefault()
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      shell.openExternal(url)
+    }
+  })
+
+  // 拦截 window.open / target="_blank" 链接
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      shell.openExternal(url)
+    }
+    return { action: 'deny' }
   })
 
   // macOS: 点击关闭按钮时隐藏窗口而不是退出（除非正在退出应用）
