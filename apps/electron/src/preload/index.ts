@@ -6,7 +6,7 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron'
-import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS } from '@proma/shared'
+import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS } from '@proma/shared'
 import { USER_PROFILE_IPC_CHANNELS, SETTINGS_IPC_CHANNELS } from '../types'
 import type {
   RuntimeStatus,
@@ -29,6 +29,12 @@ import type {
   AttachmentSaveResult,
   FileDialogResult,
   RecentMessagesResult,
+  AgentSessionMeta,
+  AgentMessage,
+  AgentSendInput,
+  AgentStreamEvent,
+  AgentWorkspace,
+  AgentGenerateTitleInput,
 } from '@proma/shared'
 import type { UserProfile, AppSettings } from '../types'
 
@@ -50,6 +56,11 @@ export interface ElectronAPI {
    * @returns Git 仓库状态
    */
   getGitRepoStatus: (dirPath: string) => Promise<GitRepoStatus | null>
+
+  // ===== 通用工具 =====
+
+  /** 在系统默认浏览器中打开外部链接 */
+  openExternal: (url: string) => Promise<void>
 
   // ===== 渠道管理相关 =====
 
@@ -172,6 +183,55 @@ export interface ElectronAPI {
 
   /** 订阅流式错误事件 */
   onStreamError: (callback: (event: StreamErrorEvent) => void) => () => void
+
+  // ===== Agent 会话管理相关 =====
+
+  /** 获取 Agent 会话列表 */
+  listAgentSessions: () => Promise<AgentSessionMeta[]>
+
+  /** 创建 Agent 会话 */
+  createAgentSession: (title?: string, channelId?: string, workspaceId?: string) => Promise<AgentSessionMeta>
+
+  /** 获取 Agent 会话消息 */
+  getAgentSessionMessages: (id: string) => Promise<AgentMessage[]>
+
+  /** 更新 Agent 会话标题 */
+  updateAgentSessionTitle: (id: string, title: string) => Promise<AgentSessionMeta>
+
+  /** 删除 Agent 会话 */
+  deleteAgentSession: (id: string) => Promise<void>
+
+  /** 生成 Agent 会话标题 */
+  generateAgentTitle: (input: AgentGenerateTitleInput) => Promise<string | null>
+
+  /** 发送 Agent 消息 */
+  sendAgentMessage: (input: AgentSendInput) => Promise<void>
+
+  /** 中止 Agent 执行 */
+  stopAgent: (sessionId: string) => Promise<void>
+
+  // ===== Agent 工作区管理相关 =====
+
+  /** 获取 Agent 工作区列表 */
+  listAgentWorkspaces: () => Promise<AgentWorkspace[]>
+
+  /** 创建 Agent 工作区 */
+  createAgentWorkspace: (name: string) => Promise<AgentWorkspace>
+
+  /** 更新 Agent 工作区 */
+  updateAgentWorkspace: (id: string, updates: { name: string }) => Promise<AgentWorkspace>
+
+  /** 删除 Agent 工作区 */
+  deleteAgentWorkspace: (id: string) => Promise<void>
+
+  /** 订阅 Agent 流式事件（返回清理函数） */
+  onAgentStreamEvent: (callback: (event: AgentStreamEvent) => void) => () => void
+
+  /** 订阅 Agent 流式完成事件 */
+  onAgentStreamComplete: (callback: (data: { sessionId: string }) => void) => () => void
+
+  /** 订阅 Agent 流式错误事件 */
+  onAgentStreamError: (callback: (data: { sessionId: string; error: string }) => void) => () => void
 }
 
 /**
@@ -185,6 +245,11 @@ const electronAPI: ElectronAPI = {
 
   getGitRepoStatus: (dirPath: string) => {
     return ipcRenderer.invoke(IPC_CHANNELS.GET_GIT_REPO_STATUS, dirPath)
+  },
+
+  // 通用工具
+  openExternal: (url: string) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.OPEN_EXTERNAL, url)
   },
 
   // 渠道管理
@@ -346,6 +411,74 @@ const electronAPI: ElectronAPI = {
     const listener = (_: unknown, event: StreamErrorEvent): void => callback(event)
     ipcRenderer.on(CHAT_IPC_CHANNELS.STREAM_ERROR, listener)
     return () => { ipcRenderer.removeListener(CHAT_IPC_CHANNELS.STREAM_ERROR, listener) }
+  },
+
+  // Agent 会话管理
+  listAgentSessions: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.LIST_SESSIONS)
+  },
+
+  createAgentSession: (title?: string, channelId?: string, workspaceId?: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.CREATE_SESSION, title, channelId, workspaceId)
+  },
+
+  getAgentSessionMessages: (id: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_MESSAGES, id)
+  },
+
+  updateAgentSessionTitle: (id: string, title: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.UPDATE_TITLE, id, title)
+  },
+
+  deleteAgentSession: (id: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.DELETE_SESSION, id)
+  },
+
+  generateAgentTitle: (input: AgentGenerateTitleInput) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GENERATE_TITLE, input)
+  },
+
+  sendAgentMessage: (input: AgentSendInput) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.SEND_MESSAGE, input)
+  },
+
+  stopAgent: (sessionId: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.STOP_AGENT, sessionId)
+  },
+
+  // Agent 工作区管理
+  listAgentWorkspaces: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.LIST_WORKSPACES)
+  },
+
+  createAgentWorkspace: (name: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.CREATE_WORKSPACE, name)
+  },
+
+  updateAgentWorkspace: (id: string, updates: { name: string }) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.UPDATE_WORKSPACE, id, updates)
+  },
+
+  deleteAgentWorkspace: (id: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.DELETE_WORKSPACE, id)
+  },
+
+  onAgentStreamEvent: (callback: (event: AgentStreamEvent) => void) => {
+    const listener = (_: unknown, event: AgentStreamEvent): void => callback(event)
+    ipcRenderer.on(AGENT_IPC_CHANNELS.STREAM_EVENT, listener)
+    return () => { ipcRenderer.removeListener(AGENT_IPC_CHANNELS.STREAM_EVENT, listener) }
+  },
+
+  onAgentStreamComplete: (callback: (data: { sessionId: string }) => void) => {
+    const listener = (_: unknown, data: { sessionId: string }): void => callback(data)
+    ipcRenderer.on(AGENT_IPC_CHANNELS.STREAM_COMPLETE, listener)
+    return () => { ipcRenderer.removeListener(AGENT_IPC_CHANNELS.STREAM_COMPLETE, listener) }
+  },
+
+  onAgentStreamError: (callback: (data: { sessionId: string; error: string }) => void) => {
+    const listener = (_: unknown, data: { sessionId: string; error: string }): void => callback(data)
+    ipcRenderer.on(AGENT_IPC_CHANNELS.STREAM_ERROR, listener)
+    return () => { ipcRenderer.removeListener(AGENT_IPC_CHANNELS.STREAM_ERROR, listener) }
   },
 }
 

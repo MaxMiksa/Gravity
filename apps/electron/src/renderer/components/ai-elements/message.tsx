@@ -215,6 +215,21 @@ export const MessageResponse = React.memo(
         <Markdown
           remarkPlugins={[remarkGfm]}
           components={{
+            a: ({ href, children: linkChildren, ...linkProps }) => (
+              <a
+                {...linkProps}
+                href={href}
+                onClick={(e) => {
+                  e.preventDefault()
+                  if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
+                    window.electronAPI.openExternal(href)
+                  }
+                }}
+                title={href}
+              >
+                {linkChildren}
+              </a>
+            ),
             pre: ({ children: preChildren }) => {
               // 检测子 <code> 元素的 className 是否包含 language-mermaid
               const codeChild = React.Children.toArray(preChildren).find(
