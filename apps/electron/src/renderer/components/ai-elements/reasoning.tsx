@@ -213,7 +213,28 @@ export const ReasoningContent = React.memo(
         {...props}
       >
         <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-          <Markdown remarkPlugins={[remarkGfm]}>{children}</Markdown>
+          <Markdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              a: ({ href, children: linkChildren, ...linkProps }) => (
+                <a
+                  {...linkProps}
+                  href={href}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
+                      window.electronAPI.openExternal(href)
+                    }
+                  }}
+                  title={href}
+                >
+                  {linkChildren}
+                </a>
+              ),
+            }}
+          >
+            {children}
+          </Markdown>
         </div>
       </CollapsibleContent>
     )
