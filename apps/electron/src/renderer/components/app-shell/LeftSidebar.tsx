@@ -560,7 +560,9 @@ function ConversationItem({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <button
+        <div
+          role="button"
+          tabIndex={0}
           onClick={onSelect}
           onDoubleClick={(e) => {
             e.stopPropagation()
@@ -622,7 +624,7 @@ function ConversationItem({
           >
             <Trash2 size={13} />
           </button>
-        </button>
+        </div>
       </ContextMenuTrigger>
 
       {/* 右键菜单 */}
@@ -714,7 +716,9 @@ function AgentSessionItem({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <button
+        <div
+          role="button"
+          tabIndex={0}
           onClick={onSelect}
           onDoubleClick={(e) => {
             e.stopPropagation()
@@ -771,7 +775,7 @@ function AgentSessionItem({
           >
             <Trash2 size={13} />
           </button>
-        </button>
+        </div>
       </ContextMenuTrigger>
 
       <ContextMenuContent className="w-40">
