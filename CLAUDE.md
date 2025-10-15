@@ -24,7 +24,7 @@ Bun workspace monorepo：
 proma/
 ├── packages/
 │   ├── core/       # AI Provider 适配器、代码高亮服务 (Shiki)
-│   ├── shared/     # 共享类型、IPC 通道常量、配置
+│   ├── shared/     # 共享类型、IPC 通道常量、配置、Agent 工具匹配
 │   └── ui/         # 共享 UI 组件 (CodeBlock, MermaidBlock, useSmoothStream)
 └── apps/
     └── electron/   # Electron 桌面应用
@@ -110,12 +110,16 @@ bun run generate:icons    # 生成应用图标
 | `channel-manager.ts` | 渠道 CRUD、API Key AES-256-GCM 加密（Electron safeStorage）、连接测试、模型获取 |
 | `conversation-manager.ts` | 对话 CRUD、JSONL 消息存储、置顶、上下文分割 |
 | `chat-service.ts` | AI 流式调用编排、Provider 适配器集成、消息持久化、AbortController |
+| `agent-service.ts` | Agent SDK 调用编排、流式事件转换与推送、AbortController |
+| `agent-session-manager.ts` | Agent 会话 CRUD、JSONL 消息存储 |
+| `agent-prompt-builder.ts` | Agent 系统提示词构建（注入工作区上下文） |
+| `agent-workspace-manager.ts` | 工作区管理、MCP Server 配置、Skills 配置 |
 | `attachment-service.ts` | 附件存储/读取/删除、文件对话框 |
 | `document-parser.ts` | 文档文本提取（PDF/Office/文本文件） |
 | `user-profile-service.ts` | 用户档案持久化 |
 | `settings-service.ts` | 应用设置持久化（主题等） |
 | `config-paths.ts` | `~/.proma/` 目录路径管理 |
-| `runtime-init.ts` | Bun/Git 运行时检测 |
+| `runtime-init.ts` | Bun/Git 运行时检测（`bun-finder.ts`、`git-detector.ts`、`shell-env.ts`） |
 
 ### AI Provider 适配器（`packages/core/src/providers/`）
 
@@ -133,17 +137,21 @@ bun run generate:icons    # 生成应用图标
 | Atom 文件 | 管理的状态 |
 |-----------|-----------|
 | `chat-atoms.ts` | 对话列表、当前消息、流式状态（Map 结构支持多对话并行）、模型选择、上下文设置、并排模式、思考模式、待上传附件 |
+| `agent-atoms.ts` | Agent 会话列表、当前会话、流式状态（`AgentStreamState`）、工作区选择、渠道选择 |
 | `active-view.ts` | 主面板视图切换（'conversations' / 'settings'） |
 | `app-mode.ts` | 应用模式（Chat / Agent） |
 | `settings-tab.ts` | 设置面板当前标签页 |
 | `theme.ts` | 主题模式（light / dark / system） |
 | `user-profile.ts` | 用户档案（姓名 + 头像） |
+| `updater.ts` | 自动更新状态（检查/下载/安装），优雅降级（updater 不可用时保持 idle） |
 
 ### 渲染进程组件架构（`renderer/components/`）
 
 - **`app-shell/`**：三面板布局（LeftSidebar | NavigatorPanel | MainContentPanel），侧边栏含模式切换、置顶对话、日期分组列表、流式指示器
 - **`chat/`**：聊天核心 — ChatView（消息加载/流式订阅）、ChatHeader（模型选择/上下文设置）、ChatInput（Tiptap 富文本编辑器）、ChatMessages（消息列表/自动滚动）、ParallelChatMessages（并排模式）
-- **`settings/`**：设置面板 — GeneralSettings（用户档案）、AppearanceSettings（主题）、ChannelSettings（渠道管理）、ChannelForm（Provider 配置）；含 `primitives/` 可复用表单组件
+- **`agent/`**：Agent 模式 — AgentView（会话主视图）、AgentHeader（渠道/模型选择）、AgentMessages（消息列表 + 工具活动）、ToolActivityItem（工具调用展示）、WorkspaceSelector（工作区切换）
+- **`settings/`**：设置面板 — GeneralSettings（用户档案）、AppearanceSettings（主题）、ChannelSettings（渠道管理）、ChannelForm（Provider 配置）、AgentSettings（Agent 渠道/工作区/MCP）、McpServerForm（MCP 服务器配置）、AboutSettings（版本/更新）；含 `primitives/` 可复用表单组件
+- **`file-browser/`**：文件浏览器 — FileBrowser（工作区文件树浏览）
 - **`ai-elements/`**：AI 展示组件 — Markdown 渲染、代码块、Mermaid 图、推理折叠、上下文分割线、富文本输入
 - **`ui/`**：ShadcnUI 组件（new-york 风格，CSS 变量主题）
 
@@ -155,6 +163,12 @@ bun run generate:icons    # 生成应用图标
 ├── conversations.json      # 对话索引（元数据，轻量）
 ├── conversations/          # 消息存储
 │   └── {uuid}.jsonl        # 每对话一个 JSONL 文件，追加写入
+├── agent-sessions.json     # Agent 会话索引
+├── agent-sessions/         # Agent 会话消息存储
+│   └── {uuid}.jsonl        # 每会话一个 JSONL 文件
+├── workspaces/             # 工作区配置
+│   └── {slug}/
+│       └── config.json     # MCP Server、Skills 等配置
 ├── attachments/            # 附件文件
 │   └── {conversationId}/
 │       └── {uuid}.ext
@@ -166,7 +180,7 @@ bun run generate:icons    # 生成应用图标
 
 ## 构建工具
 
-- **主进程/Preload**：esbuild (`--bundle --platform=node --format=cjs --external:electron`)
+- **主进程/Preload**：esbuild (`--bundle --platform=node --format=cjs --external:electron --external:@anthropic-ai/claude-agent-sdk`)
 - **渲染进程**：Vite + React 插件 + Tailwind CSS + HMR
 - **开发热重载**：渲染进程 Vite HMR 即时生效；主进程/Preload 通过 electronmon 监听 dist 文件变化自动重启
 - **打包分发**：electron-builder（配置见 `electron-builder.yml`）
@@ -188,6 +202,35 @@ bun run generate:icons    # 生成应用图标
 ## 版本管理
 
 提交代码时始终递增受影响包的 patch 版本（如 `0.1.18` → `0.1.19`），影响多个包则都要递增。
+
+## Agent SDK 集成架构
+
+基于 `@anthropic-ai/claude-agent-sdk` 实现 Agent 模式，与 Chat 模式并行：
+
+### 核心流程
+
+```
+用户输入 → agent-service.ts (SDK query) → SDK SDKMessage 流
+→ convertSDKMessage() → AgentEvent[] → webContents.send()
+→ agent-atoms.ts (applyAgentEvent) → React UI
+```
+
+### 关键设计
+
+- **SDK 调用**：`sdk.query({ prompt, options: { apiKey, model, permissionMode: 'bypassPermissions', allowDangerouslySkipPermissions: true, cwd, abortController } })`
+- **事件转换**：`convertSDKMessage()`（`@proma/shared`）将 SDK 原始消息转为统一的 `AgentEvent` 类型
+- **工具匹配**：`packages/shared/src/agent/tool-matching.ts` — 无状态 `ToolIndex` + `extractToolStarts` / `extractToolResults` 解析工具调用
+- **状态管理**：`applyAgentEvent()` 纯函数更新 `AgentStreamState`，支持流式增量更新
+- **工作区隔离**：每个工作区独立的 MCP Server 配置和 cwd，Agent 会话按工作区过滤
+
+### 共享类型（`@proma/shared`）
+
+- `AgentEvent`：Agent 事件（text / tool_start / tool_result / done / error）
+- `AgentSessionMeta`：会话元数据（id / title / channelId / workspaceId）
+- `AgentMessage`：持久化消息（role + content blocks）
+- `AgentSendInput`：发送请求输入
+- `AGENT_IPC_CHANNELS`：Agent 相关 IPC 通道常量
+- `WorkspaceCapabilities`：工作区能力（MCP Server 列表 + Skills 列表）
 
 ## 创作参考
 
