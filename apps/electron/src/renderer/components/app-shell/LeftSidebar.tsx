@@ -160,7 +160,13 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
   React.useEffect(() => {
     window.electronAPI
       .listConversations()
-      .then(setConversations)
+      .then((list) => {
+        setConversations(list)
+        // 默认加载最近一条对话（按 updatedAt 降序，首条即最新）
+        if (list.length > 0) {
+          setCurrentConversationId(list[0].id)
+        }
+      })
       .catch(console.error)
     window.electronAPI
       .getUserProfile()
@@ -170,7 +176,8 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
       .listAgentSessions()
       .then(setAgentSessions)
       .catch(console.error)
-  }, [setConversations, setUserProfile, setAgentSessions])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setConversations, setCurrentConversationId, setUserProfile, setAgentSessions])
 
   /** 处理导航项点击 */
   const handleItemClick = (item: SidebarItemId): void => {
