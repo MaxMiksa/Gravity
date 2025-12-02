@@ -13,8 +13,8 @@ directories:
 # 压缩配置
 compression: normal
 
-# ASAR 打包配置
-asar: true
+# ASAR 打包配置（禁用 ASAR，避免 SDK symlink 路径越界问题）
+asar: false
 
 # 通用文件配置
 files:
@@ -25,7 +25,17 @@ files:
   # 排除所有平台的 ripgrep，会在平台特定配置中添加正确的版本
   - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/**/*"
 
-# 额外资源配置（Bun 二进制在各平台配置中单独指定）
+# 通用额外资源：将 SDK 复制到 app/node_modules 中供运行时 require 解析
+extraResources:
+  - from: node_modules/@anthropic-ai/claude-agent-sdk
+    to: app/node_modules/@anthropic-ai/claude-agent-sdk
+    filter:
+      - "**/*"
+  # 默认 Skills 模板（首次启动时同步到 ~/.proma/default-skills/）
+  - from: default-skills
+    to: default-skills
+    filter:
+      - "**/*"
 
 # ============================================
 # macOS 配置
@@ -146,5 +156,6 @@ deb:
 # 发布配置
 # ============================================
 publish:
-  provider: generic
-  url: ""
+  provider: github
+  owner: ErlichLiu
+  repo: Proma
