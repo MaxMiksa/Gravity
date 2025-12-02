@@ -5,6 +5,9 @@ import { createApplicationMenu } from './menu'
 import { registerIpcHandlers } from './ipc'
 import { createTray, destroyTray } from './tray'
 import { initializeRuntime } from './lib/runtime-init'
+import { seedDefaultSkills } from './lib/config-paths'
+import { initAutoUpdater } from './lib/updater/auto-updater'
+import { startWorkspaceWatcher, stopWorkspaceWatcher } from './lib/workspace-watcher'
 
 let mainWindow: BrowserWindow | null = null
 // 标记是否真正要退出应用（用于区分关闭窗口和退出应用）
@@ -106,6 +109,9 @@ app.whenReady().then(async () => {
   // 必须在其他初始化之前执行，确保环境变量正确加载
   await initializeRuntime()
 
+  // 同步默认 Skills 模板到 ~/.proma/default-skills/
+  seedDefaultSkills()
+
   // Create application menu
   const menu = createApplicationMenu()
   Menu.setApplicationMenu(menu)
@@ -127,6 +133,16 @@ app.whenReady().then(async () => {
   // Create main window (will be shown when ready)
   createWindow()
 
+  // 启动工作区文件监听（Agent MCP/Skills + 文件浏览器自动刷新）
+  if (mainWindow) {
+    startWorkspaceWatcher(mainWindow)
+  }
+
+  // 生产环境下初始化自动更新
+  if (app.isPackaged && mainWindow) {
+    initAutoUpdater(mainWindow)
+  }
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow()
@@ -146,6 +162,8 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   // 标记正在退出，让 close 事件不再阻止关闭
   isQuitting = true
+  // 停止工作区文件监听
+  stopWorkspaceWatcher()
   // Clean up system tray before quitting
   destroyTray()
 })

@@ -4,7 +4,7 @@
  * 负责注册主进程和渲染进程之间的通信处理器
  */
 
-import { ipcMain, nativeTheme, shell, BrowserWindow } from 'electron'
+import { ipcMain, nativeTheme, shell, dialog, BrowserWindow } from 'electron'
 import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS } from '@proma/shared'
 import { USER_PROFILE_IPC_CHANNELS, SETTINGS_IPC_CHANNELS } from '../types'
 import type {
@@ -29,9 +29,17 @@ import type {
   AgentSendInput,
   AgentWorkspace,
   AgentGenerateTitleInput,
+  AgentSaveFilesInput,
+  AgentSavedFile,
+  AgentCopyFolderInput,
+  WorkspaceMcpConfig,
+  SkillMeta,
+  WorkspaceCapabilities,
+  FileEntry,
 } from '@proma/shared'
 import type { UserProfile, AppSettings } from '../types'
 import { getRuntimeStatus, getGitRepoStatus } from './lib/runtime-init'
+import { registerUpdaterIpc } from './lib/updater/updater-ipc'
 import {
   listChannels,
   createChannel,
@@ -69,13 +77,20 @@ import {
   updateAgentSessionMeta,
   deleteAgentSession,
 } from './lib/agent-session-manager'
-import { runAgent, stopAgent, generateAgentTitle } from './lib/agent-service'
+import { runAgent, stopAgent, generateAgentTitle, saveFilesToAgentSession, copyFolderToSession } from './lib/agent-service'
+import { getAgentSessionWorkspacePath, getAgentWorkspacesDir } from './lib/config-paths'
 import {
   listAgentWorkspaces,
   createAgentWorkspace,
   updateAgentWorkspace,
   deleteAgentWorkspace,
   ensureDefaultWorkspace,
+  getWorkspaceMcpConfig,
+  saveWorkspaceMcpConfig,
+  getWorkspaceSkills,
+  getWorkspaceCapabilities,
+  getAgentWorkspace,
+  deleteWorkspaceSkill,
 } from './lib/agent-workspace-manager'
 
 /**
@@ -488,6 +503,48 @@ export function registerIpcHandlers(): void {
     }
   )
 
+  // ===== 工作区能力（MCP + Skill） =====
+
+  // 获取工作区能力摘要
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GET_CAPABILITIES,
+    async (_, workspaceSlug: string): Promise<WorkspaceCapabilities> => {
+      return getWorkspaceCapabilities(workspaceSlug)
+    }
+  )
+
+  // 获取工作区 MCP 配置
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GET_MCP_CONFIG,
+    async (_, workspaceSlug: string): Promise<WorkspaceMcpConfig> => {
+      return getWorkspaceMcpConfig(workspaceSlug)
+    }
+  )
+
+  // 保存工作区 MCP 配置
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.SAVE_MCP_CONFIG,
+    async (_, workspaceSlug: string, config: WorkspaceMcpConfig): Promise<void> => {
+      return saveWorkspaceMcpConfig(workspaceSlug, config)
+    }
+  )
+
+  // 获取工作区 Skill 列表
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GET_SKILLS,
+    async (_, workspaceSlug: string): Promise<SkillMeta[]> => {
+      return getWorkspaceSkills(workspaceSlug)
+    }
+  )
+
+  // 删除工作区 Skill
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.DELETE_SKILL,
+    async (_, workspaceSlug: string, skillSlug: string): Promise<void> => {
+      return deleteWorkspaceSkill(workspaceSlug, skillSlug)
+    }
+  )
+
   // 发送 Agent 消息（触发 Agent SDK 流式响应）
   ipcMain.handle(
     AGENT_IPC_CHANNELS.SEND_MESSAGE,
@@ -504,5 +561,146 @@ export function registerIpcHandlers(): void {
     }
   )
 
+  // ===== Agent 附件 =====
+
+  // 保存文件到 Agent session 工作目录
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.SAVE_FILES_TO_SESSION,
+    async (_, input: AgentSaveFilesInput): Promise<AgentSavedFile[]> => {
+      return saveFilesToAgentSession(input)
+    }
+  )
+
+  // 打开文件夹选择对话框
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.OPEN_FOLDER_DIALOG,
+    async (): Promise<{ path: string; name: string } | null> => {
+      const win = BrowserWindow.getFocusedWindow()
+      const result = await dialog.showOpenDialog(win ?? BrowserWindow.getAllWindows()[0], {
+        properties: ['openDirectory'],
+        title: '选择文件夹',
+      })
+
+      if (result.canceled || result.filePaths.length === 0) return null
+
+      const folderPath = result.filePaths[0]
+      const name = folderPath.split('/').filter(Boolean).pop() || 'folder'
+      return { path: folderPath, name }
+    }
+  )
+
+  // 复制文件夹到 Agent session 工作目录
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.COPY_FOLDER_TO_SESSION,
+    async (_, input: AgentCopyFolderInput): Promise<AgentSavedFile[]> => {
+      return copyFolderToSession(input)
+    }
+  )
+
+  // ===== Agent 文件系统操作 =====
+
+  // 获取 session 工作路径
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.GET_SESSION_PATH,
+    async (_, workspaceId: string, sessionId: string): Promise<string | null> => {
+      const ws = getAgentWorkspace(workspaceId)
+      if (!ws) return null
+      return getAgentSessionWorkspacePath(ws.slug, sessionId)
+    }
+  )
+
+  // 列出目录内容（浅层，安全校验）
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.LIST_DIRECTORY,
+    async (_, dirPath: string): Promise<FileEntry[]> => {
+      const { readdirSync, statSync } = await import('node:fs')
+      const { resolve } = await import('node:path')
+
+      // 安全校验：路径必须在 agent-workspaces 目录下
+      const safePath = resolve(dirPath)
+      const workspacesRoot = resolve(getAgentWorkspacesDir())
+      if (!safePath.startsWith(workspacesRoot)) {
+        throw new Error('访问路径超出 Agent 工作区范围')
+      }
+
+      const entries: FileEntry[] = []
+      const items = readdirSync(safePath, { withFileTypes: true })
+
+      for (const item of items) {
+        // 跳过隐藏文件
+        if (item.name.startsWith('.')) continue
+
+        const fullPath = resolve(safePath, item.name)
+        entries.push({
+          name: item.name,
+          path: fullPath,
+          isDirectory: item.isDirectory(),
+        })
+      }
+
+      // 目录在前，文件在后，各自按名称排序
+      entries.sort((a, b) => {
+        if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1
+        return a.name.localeCompare(b.name)
+      })
+
+      return entries
+    }
+  )
+
+  // 删除文件或目录
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.DELETE_FILE,
+    async (_, filePath: string): Promise<void> => {
+      const { rmSync } = await import('node:fs')
+      const { resolve } = await import('node:path')
+
+      // 安全校验：路径必须在 agent-workspaces 目录下
+      const safePath = resolve(filePath)
+      const workspacesRoot = resolve(getAgentWorkspacesDir())
+      if (!safePath.startsWith(workspacesRoot)) {
+        throw new Error('访问路径超出 Agent 工作区范围')
+      }
+
+      rmSync(safePath, { recursive: true, force: true })
+      console.log(`[Agent 文件] 已删除: ${safePath}`)
+    }
+  )
+
+  // 用系统默认应用打开文件
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.OPEN_FILE,
+    async (_, filePath: string): Promise<void> => {
+      const { resolve } = await import('node:path')
+
+      const safePath = resolve(filePath)
+      const workspacesRoot = resolve(getAgentWorkspacesDir())
+      if (!safePath.startsWith(workspacesRoot)) {
+        throw new Error('访问路径超出 Agent 工作区范围')
+      }
+
+      await shell.openPath(safePath)
+    }
+  )
+
+  // 在系统文件管理器中显示文件
+  ipcMain.handle(
+    AGENT_IPC_CHANNELS.SHOW_IN_FOLDER,
+    async (_, filePath: string): Promise<void> => {
+      const { resolve } = await import('node:path')
+
+      const safePath = resolve(filePath)
+      const workspacesRoot = resolve(getAgentWorkspacesDir())
+      if (!safePath.startsWith(workspacesRoot)) {
+        throw new Error('访问路径超出 Agent 工作区范围')
+      }
+
+      shell.showItemInFolder(safePath)
+    }
+  )
+
   console.log('[IPC] IPC 处理器注册完成')
+
+  // 注册更新 IPC 处理器
+  registerUpdaterIpc()
 }
