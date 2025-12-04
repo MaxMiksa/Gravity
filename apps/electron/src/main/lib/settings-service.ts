@@ -29,6 +29,9 @@ export function getSettings(): AppSettings {
     const data = JSON.parse(raw) as Partial<AppSettings>
     return {
       themeMode: data.themeMode || DEFAULT_THEME_MODE,
+      agentChannelId: data.agentChannelId,
+      agentModelId: data.agentModelId,
+      agentWorkspaceId: data.agentWorkspaceId,
     }
   } catch (error) {
     console.error('[设置] 读取失败:', error)
