@@ -141,3 +141,16 @@ export const hasMoreMessagesAtom = atom<boolean>(false)
 
 /** 初次加载的消息条数 */
 export const INITIAL_MESSAGE_LIMIT = 10
+
+/**
+ * 流式错误消息 Map — 以 conversationId 为 key
+ * 错误发生时写入，下次发送或手动关闭时清除
+ */
+export const chatStreamErrorsAtom = atom<Map<string, string>>(new Map())
+
+/** 当前对话的错误消息（派生只读原子） */
+export const currentChatErrorAtom = atom<string | null>((get) => {
+  const currentId = get(currentConversationIdAtom)
+  if (!currentId) return null
+  return get(chatStreamErrorsAtom).get(currentId) ?? null
+})
