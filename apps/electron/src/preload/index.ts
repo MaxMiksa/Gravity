@@ -35,6 +35,13 @@ import type {
   AgentStreamEvent,
   AgentWorkspace,
   AgentGenerateTitleInput,
+  AgentSaveFilesInput,
+  AgentSavedFile,
+  AgentCopyFolderInput,
+  WorkspaceMcpConfig,
+  SkillMeta,
+  WorkspaceCapabilities,
+  FileEntry,
 } from '@proma/shared'
 import type { UserProfile, AppSettings } from '../types'
 
@@ -224,6 +231,23 @@ export interface ElectronAPI {
   /** 删除 Agent 工作区 */
   deleteAgentWorkspace: (id: string) => Promise<void>
 
+  // ===== 工作区能力（MCP + Skill） =====
+
+  /** 获取工作区能力摘要 */
+  getWorkspaceCapabilities: (workspaceSlug: string) => Promise<WorkspaceCapabilities>
+
+  /** 获取工作区 MCP 配置 */
+  getWorkspaceMcpConfig: (workspaceSlug: string) => Promise<WorkspaceMcpConfig>
+
+  /** 保存工作区 MCP 配置 */
+  saveWorkspaceMcpConfig: (workspaceSlug: string, config: WorkspaceMcpConfig) => Promise<void>
+
+  /** 获取工作区 Skill 列表 */
+  getWorkspaceSkills: (workspaceSlug: string) => Promise<SkillMeta[]>
+
+  /** 删除工作区 Skill */
+  deleteWorkspaceSkill: (workspaceSlug: string, skillSlug: string) => Promise<void>
+
   /** 订阅 Agent 流式事件（返回清理函数） */
   onAgentStreamEvent: (callback: (event: AgentStreamEvent) => void) => () => void
 
@@ -232,6 +256,57 @@ export interface ElectronAPI {
 
   /** 订阅 Agent 流式错误事件 */
   onAgentStreamError: (callback: (data: { sessionId: string; error: string }) => void) => () => void
+
+  // ===== Agent 附件 =====
+
+  /** 保存文件到 Agent session 工作目录 */
+  saveFilesToAgentSession: (input: AgentSaveFilesInput) => Promise<AgentSavedFile[]>
+
+  /** 打开文件夹选择对话框 */
+  openFolderDialog: () => Promise<{ path: string; name: string } | null>
+
+  /** 复制文件夹到 Agent session 工作目录 */
+  copyFolderToSession: (input: AgentCopyFolderInput) => Promise<AgentSavedFile[]>
+
+  // ===== Agent 文件系统操作 =====
+
+  /** 获取 session 工作路径 */
+  getAgentSessionPath: (workspaceId: string, sessionId: string) => Promise<string | null>
+
+  /** 列出目录内容 */
+  listDirectory: (dirPath: string) => Promise<FileEntry[]>
+
+  /** 删除文件/目录 */
+  deleteFile: (filePath: string) => Promise<void>
+
+  /** 用系统默认应用打开文件 */
+  openFile: (filePath: string) => Promise<void>
+
+  /** 在系统文件管理器中显示文件 */
+  showInFolder: (filePath: string) => Promise<void>
+
+  // ===== 自动更新相关（可选，仅在 updater 模块存在时可用） =====
+
+  /** 更新 API */
+  updater?: {
+    checkForUpdates: () => Promise<void>
+    downloadUpdate: () => Promise<void>
+    installUpdate: () => Promise<void>
+    getStatus: () => Promise<{
+      status: 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'
+      version?: string
+      releaseNotes?: string
+      progress?: { percent: number; transferred: number; total: number }
+      error?: string
+    }>
+    onStatusChanged: (callback: (status: {
+      status: 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'
+      version?: string
+      releaseNotes?: string
+      progress?: { percent: number; transferred: number; total: number }
+      error?: string
+    }) => void) => () => void
+  }
 }
 
 /**
@@ -463,6 +538,27 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.DELETE_WORKSPACE, id)
   },
 
+  // 工作区能力（MCP + Skill）
+  getWorkspaceCapabilities: (workspaceSlug: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_CAPABILITIES, workspaceSlug)
+  },
+
+  getWorkspaceMcpConfig: (workspaceSlug: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_MCP_CONFIG, workspaceSlug)
+  },
+
+  saveWorkspaceMcpConfig: (workspaceSlug: string, config: WorkspaceMcpConfig) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.SAVE_MCP_CONFIG, workspaceSlug, config)
+  },
+
+  getWorkspaceSkills: (workspaceSlug: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_SKILLS, workspaceSlug)
+  },
+
+  deleteWorkspaceSkill: (workspaceSlug: string, skillSlug: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.DELETE_SKILL, workspaceSlug, skillSlug)
+  },
+
   onAgentStreamEvent: (callback: (event: AgentStreamEvent) => void) => {
     const listener = (_: unknown, event: AgentStreamEvent): void => callback(event)
     ipcRenderer.on(AGENT_IPC_CHANNELS.STREAM_EVENT, listener)
@@ -479,6 +575,66 @@ const electronAPI: ElectronAPI = {
     const listener = (_: unknown, data: { sessionId: string; error: string }): void => callback(data)
     ipcRenderer.on(AGENT_IPC_CHANNELS.STREAM_ERROR, listener)
     return () => { ipcRenderer.removeListener(AGENT_IPC_CHANNELS.STREAM_ERROR, listener) }
+  },
+
+  // 工作区文件变化通知
+  onCapabilitiesChanged: (callback: () => void) => {
+    const listener = (): void => callback()
+    ipcRenderer.on(AGENT_IPC_CHANNELS.CAPABILITIES_CHANGED, listener)
+    return () => { ipcRenderer.removeListener(AGENT_IPC_CHANNELS.CAPABILITIES_CHANGED, listener) }
+  },
+
+  onWorkspaceFilesChanged: (callback: () => void) => {
+    const listener = (): void => callback()
+    ipcRenderer.on(AGENT_IPC_CHANNELS.WORKSPACE_FILES_CHANGED, listener)
+    return () => { ipcRenderer.removeListener(AGENT_IPC_CHANNELS.WORKSPACE_FILES_CHANGED, listener) }
+  },
+
+  // Agent 附件
+  saveFilesToAgentSession: (input: AgentSaveFilesInput) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.SAVE_FILES_TO_SESSION, input)
+  },
+
+  openFolderDialog: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.OPEN_FOLDER_DIALOG)
+  },
+
+  copyFolderToSession: (input: AgentCopyFolderInput) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.COPY_FOLDER_TO_SESSION, input)
+  },
+
+  // Agent 文件系统操作
+  getAgentSessionPath: (workspaceId: string, sessionId: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.GET_SESSION_PATH, workspaceId, sessionId)
+  },
+
+  listDirectory: (dirPath: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.LIST_DIRECTORY, dirPath)
+  },
+
+  deleteFile: (filePath: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.DELETE_FILE, filePath)
+  },
+
+  openFile: (filePath: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.OPEN_FILE, filePath)
+  },
+
+  showInFolder: (filePath: string) => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.SHOW_IN_FOLDER, filePath)
+  },
+
+  // 自动更新（updater 模块为可选，bridge 始终暴露，IPC 调用失败时由渲染进程处理）
+  updater: {
+    checkForUpdates: () => ipcRenderer.invoke('updater:check'),
+    downloadUpdate: () => ipcRenderer.invoke('updater:download'),
+    installUpdate: () => ipcRenderer.invoke('updater:install'),
+    getStatus: () => ipcRenderer.invoke('updater:get-status'),
+    onStatusChanged: (callback) => {
+      const listener = (_event: Electron.IpcRendererEvent, status: Parameters<typeof callback>[0]): void => callback(status)
+      ipcRenderer.on('updater:status-changed', listener)
+      return () => { ipcRenderer.removeListener('updater:status-changed', listener) }
+    },
   },
 }
 
