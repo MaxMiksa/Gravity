@@ -12,7 +12,7 @@ import { appModeAtom } from '@/atoms/app-mode'
 import { activeViewAtom } from '@/atoms/active-view'
 import { Panel } from './Panel'
 import { ChatView } from '@/components/chat'
-import { AgentPlaceholder } from '@/components/agent'
+import { AgentView } from '@/components/agent'
 import { SettingsPanel } from '@/components/settings'
 
 export function MainContentPanel(): React.ReactElement {
@@ -21,7 +21,7 @@ export function MainContentPanel(): React.ReactElement {
 
   /** 渲染对话视图内容 */
   const renderConversations = (): React.ReactElement => {
-    return mode === 'chat' ? <ChatView /> : <AgentPlaceholder />
+    return mode === 'chat' ? <ChatView /> : <AgentView />
   }
 
   return (
