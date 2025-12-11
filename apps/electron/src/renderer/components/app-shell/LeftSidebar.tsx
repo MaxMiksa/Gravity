@@ -10,7 +10,7 @@
 
 import * as React from 'react'
 import { useAtom, useSetAtom, useAtomValue } from 'jotai'
-import { Pin, PinOff, Settings, Plus, Trash2, Pencil, ChevronDown, ChevronRight } from 'lucide-react'
+import { Pin, PinOff, Settings, Plus, Trash2, Pencil, ChevronDown, ChevronRight, Plug, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ModeSwitcher } from './ModeSwitcher'
 import { activeViewAtom } from '@/atoms/active-view'
@@ -27,6 +27,8 @@ import {
   agentRunningSessionIdsAtom,
   agentChannelIdAtom,
   currentAgentWorkspaceIdAtom,
+  agentWorkspacesAtom,
+  workspaceCapabilitiesVersionAtom,
 } from '@/atoms/agent-atoms'
 import { userProfileAtom } from '@/atoms/user-profile'
 import { WorkspaceSelector } from '@/components/agent/WorkspaceSelector'
@@ -48,30 +50,33 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import type { ActiveView } from '@/atoms/active-view'
-import type { ConversationMeta, AgentSessionMeta } from '@proma/shared'
+import type { ConversationMeta, AgentSessionMeta, WorkspaceCapabilities } from '@proma/shared'
 
 interface SidebarItemProps {
   icon: React.ReactNode
   label: string
   active?: boolean
+  /** 内容居中显示 */
+  centered?: boolean
   /** 右侧额外元素（如展开/收起箭头） */
   suffix?: React.ReactNode
   onClick?: () => void
 }
 
-function SidebarItem({ icon, label, active, suffix, onClick }: SidebarItemProps): React.ReactElement {
+function SidebarItem({ icon, label, active, centered, suffix, onClick }: SidebarItemProps): React.ReactElement {
   return (
     <button
       onClick={onClick}
       className={cn(
         'w-full flex items-center gap-3 px-3 py-2 rounded-[10px] text-[13px] transition-colors duration-100 titlebar-no-drag',
+        centered ? 'justify-center' : '',
         active
           ? 'bg-foreground/[0.08] dark:bg-foreground/[0.08] text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]'
           : 'text-foreground/60 hover:bg-foreground/[0.04] dark:hover:bg-foreground/[0.04] hover:text-foreground'
       )}
     >
       <span className="flex-shrink-0 w-[18px] h-[18px]">{icon}</span>
-      <span className="flex-1">{label}</span>
+      {centered ? <span>{label}</span> : <span className="flex-1">{label}</span>}
       {suffix}
     </button>
   )
@@ -143,6 +148,27 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
   const agentRunningIds = useAtomValue(agentRunningSessionIdsAtom)
   const agentChannelId = useAtomValue(agentChannelIdAtom)
   const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
+  const workspaces = useAtomValue(agentWorkspacesAtom)
+
+  // 工作区能力（MCP + Skill 计数）
+  const [capabilities, setCapabilities] = React.useState<WorkspaceCapabilities | null>(null)
+  const capabilitiesVersion = useAtomValue(workspaceCapabilitiesVersionAtom)
+
+  const currentWorkspaceSlug = React.useMemo(() => {
+    if (!currentWorkspaceId) return null
+    return workspaces.find((w) => w.id === currentWorkspaceId)?.slug ?? null
+  }, [currentWorkspaceId, workspaces])
+
+  React.useEffect(() => {
+    if (!currentWorkspaceSlug || mode !== 'agent') {
+      setCapabilities(null)
+      return
+    }
+    window.electronAPI
+      .getWorkspaceCapabilities(currentWorkspaceSlug)
+      .then(setCapabilities)
+      .catch(console.error)
+  }, [currentWorkspaceSlug, mode, activeView, capabilitiesVersion])
 
   /** 置顶对话列表 */
   const pinnedConversations = React.useMemo(
@@ -460,12 +486,37 @@ export function LeftSidebar({ width }: LeftSidebarProps): React.ReactElement {
         )}
       </div>
 
+      {/* Agent 模式：工作区能力指示器 */}
+      {mode === 'agent' && capabilities && (
+        <div className="px-3 pb-1">
+          <button
+            onClick={() => handleItemClick('settings')}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-[10px] text-[12px] text-foreground/50 hover:bg-foreground/[0.04] hover:text-foreground/70 transition-colors titlebar-no-drag"
+          >
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              <span className="flex items-center gap-1">
+                <Plug size={13} className="text-foreground/40" />
+                <span className="tabular-nums">{capabilities.mcpServers.filter((s) => s.enabled).length}</span>
+                <span className="text-foreground/30">MCP</span>
+              </span>
+              <span className="text-foreground/20">·</span>
+              <span className="flex items-center gap-1">
+                <Zap size={13} className="text-foreground/40" />
+                <span className="tabular-nums">{capabilities.skills.length}</span>
+                <span className="text-foreground/30">Skills</span>
+              </span>
+            </div>
+          </button>
+        </div>
+      )}
+
       {/* 底部设置 */}
       <div className="px-3 pb-3">
         <SidebarItem
           icon={<Settings size={18} />}
           label="设置"
           active={activeItem === 'settings'}
+          centered
           onClick={() => handleItemClick('settings')}
         />
       </div>
