@@ -14,7 +14,7 @@
 
 import * as React from 'react'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { MessageSquare } from 'lucide-react'
+import { MessageSquare, AlertCircle, X } from 'lucide-react'
 import { ChatHeader } from './ChatHeader'
 import { ChatMessages } from './ChatMessages'
 import { ChatInput } from './ChatInput'
@@ -31,6 +31,8 @@ import {
   pendingAttachmentsAtom,
   hasMoreMessagesAtom,
   INITIAL_MESSAGE_LIMIT,
+  chatStreamErrorsAtom,
+  currentChatErrorAtom,
 } from '@/atoms/chat-atoms'
 import type { PendingAttachment, ConversationStreamState } from '@/atoms/chat-atoms'
 import type {
@@ -56,6 +58,8 @@ export function ChatView(): React.ReactElement {
   const thinkingEnabled = useAtomValue(thinkingEnabledAtom)
   const [pendingAttachments, setPendingAttachments] = useAtom(pendingAttachmentsAtom)
   const setHasMoreMessages = useSetAtom(hasMoreMessagesAtom)
+  const setChatStreamErrors = useSetAtom(chatStreamErrorsAtom)
+  const chatError = useAtomValue(currentChatErrorAtom)
 
   // 首条消息标题生成相关 ref（支持多对话并行）
   const pendingTitleRef = React.useRef<Map<string, GenerateTitleInput>>(new Map())
@@ -192,6 +196,13 @@ export function ChatView(): React.ReactElement {
         // 清理 Map 中的流式状态
         removeState(event.conversationId)
 
+        // 存储错误消息，供 UI 显示
+        setChatStreamErrors((prev) => {
+          const map = new Map(prev)
+          map.set(event.conversationId, event.error)
+          return map
+        })
+
         // 仅当错误的是当前对话时，重新加载消息
         if (event.conversationId === currentConvIdRef.current) {
           window.electronAPI
@@ -216,11 +227,20 @@ export function ChatView(): React.ReactElement {
     setCurrentMessages,
     setConversations,
     setHasMoreMessages,
+    setChatStreamErrors,
   ])
 
   /** 发送消息 */
   const handleSend = async (content: string): Promise<void> => {
     if (!currentConversationId || !selectedModel) return
+
+    // 清除当前对话的错误消息
+    setChatStreamErrors((prev) => {
+      if (!prev.has(currentConversationId)) return prev
+      const map = new Map(prev)
+      map.delete(currentConversationId)
+      return map
+    })
 
     // 判断是否为第一条消息（发送前历史为空）
     const isFirstMessage = currentMessages.length === 0
@@ -416,6 +436,28 @@ export function ChatView(): React.ReactElement {
         onDeleteDivider={handleDeleteDivider}
         onLoadMore={handleLoadMore}
       />
+
+      {/* 错误提示 */}
+      {chatError && (
+        <div className="mx-4 mb-2 px-4 py-2.5 rounded-lg bg-destructive/10 text-destructive text-sm flex items-center gap-2">
+          <AlertCircle className="size-4 shrink-0" />
+          <span className="flex-1 break-all">{chatError}</span>
+          <button
+            type="button"
+            className="shrink-0 p-0.5 rounded hover:bg-destructive/10 transition-colors"
+            onClick={() => {
+              if (!currentConversationId) return
+              setChatStreamErrors((prev) => {
+                const map = new Map(prev)
+                map.delete(currentConversationId)
+                return map
+              })
+            }}
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* 底部：输入框 */}
       <ChatInput
