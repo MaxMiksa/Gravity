@@ -7,16 +7,18 @@
  */
 
 import * as React from 'react'
-import { useAtom } from 'jotai'
+import { useAtom, useAtomValue } from 'jotai'
 import { cn } from '@/lib/utils'
-import { Settings, Radio, Palette, Info } from 'lucide-react'
+import { Settings, Radio, Palette, Info, Plug } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { settingsTabAtom } from '@/atoms/settings-tab'
 import type { SettingsTab } from '@/atoms/settings-tab'
+import { appModeAtom } from '@/atoms/app-mode'
 import { ChannelSettings } from './ChannelSettings'
 import { GeneralSettings } from './GeneralSettings'
 import { AppearanceSettings } from './AppearanceSettings'
 import { AboutSettings } from './AboutSettings'
+import { AgentSettings } from './AgentSettings'
 
 /** 设置 Tab 定义 */
 interface TabItem {
@@ -25,9 +27,17 @@ interface TabItem {
   icon: React.ReactNode
 }
 
-const TABS: TabItem[] = [
+/** 基础 Tabs（所有模式都有） */
+const BASE_TABS: TabItem[] = [
   { id: 'general', label: '通用', icon: <Settings size={16} /> },
   { id: 'channels', label: '渠道', icon: <Radio size={16} /> },
+]
+
+/** Agent 模式专属 Tab */
+const AGENT_TAB: TabItem = { id: 'agent', label: '配置', icon: <Plug size={16} /> }
+
+/** 尾部 Tabs */
+const TAIL_TABS: TabItem[] = [
   { id: 'appearance', label: '外观', icon: <Palette size={16} /> },
   { id: 'about', label: '关于', icon: <Info size={16} /> },
 ]
@@ -39,6 +49,8 @@ function renderTabContent(tab: SettingsTab): React.ReactElement {
       return <GeneralSettings />
     case 'channels':
       return <ChannelSettings />
+    case 'agent':
+      return <AgentSettings />
     case 'appearance':
       return <AppearanceSettings />
     case 'about':
@@ -48,6 +60,15 @@ function renderTabContent(tab: SettingsTab): React.ReactElement {
 
 export function SettingsPanel(): React.ReactElement {
   const [activeTab, setActiveTab] = useAtom(settingsTabAtom)
+  const appMode = useAtomValue(appModeAtom)
+
+  // Agent 模式时在渠道后插入 Agent Tab
+  const tabs = React.useMemo(() => {
+    if (appMode === 'agent') {
+      return [...BASE_TABS, AGENT_TAB, ...TAIL_TABS]
+    }
+    return [...BASE_TABS, ...TAIL_TABS]
+  }, [appMode])
 
   return (
     <div className="flex h-full">
@@ -57,7 +78,7 @@ export function SettingsPanel(): React.ReactElement {
           设置
         </h2>
         <nav className="flex flex-col gap-1">
-          {TABS.map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
