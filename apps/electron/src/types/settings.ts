@@ -14,6 +14,12 @@ export const DEFAULT_THEME_MODE: ThemeMode = 'dark'
 export interface AppSettings {
   /** 主题模式 */
   themeMode: ThemeMode
+  /** Agent 默认渠道 ID（仅限 Anthropic 渠道） */
+  agentChannelId?: string
+  /** Agent 默认模型 ID */
+  agentModelId?: string
+  /** Agent 当前工作区 ID */
+  agentWorkspaceId?: string
 }
 
 /** 设置 IPC 通道 */
