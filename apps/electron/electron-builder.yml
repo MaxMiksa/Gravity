@@ -111,48 +111,6 @@ nsis:
   createStartMenuShortcut: true
 
 # ============================================
-# Linux 配置
-# ============================================
-linux:
-  icon: resources/icon.png
-  category: Development
-  target:
-    - target: AppImage
-      arch:
-        - x64
-        - arm64
-    - target: deb
-      arch:
-        - x64
-        - arm64
-  # Linux 额外资源
-  extraResources:
-    # Bun 二进制
-    - from: "vendor/bun/linux-${arch}"
-      to: "vendor/bun"
-      filter:
-        - "**/*"
-    - from: "../../packages/core/node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/${arch}-linux"
-      to: "vendor/ripgrep"
-      filter:
-        - "**/*"
-
-# AppImage 配置
-appImage:
-  artifactName: "${productName}-${version}-${arch}.AppImage"
-
-# Debian 包配置
-deb:
-  depends:
-    - gconf2
-    - gconf-service
-    - libnotify4
-    - libappindicator1
-    - libxtst6
-    - libnss3
-    - git
-
-# ============================================
 # 发布配置
 # ============================================
 publish:
