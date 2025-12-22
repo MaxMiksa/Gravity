@@ -521,6 +521,8 @@ export async function runAgent(
   const accumulatedEvents: AgentEvent[] = []
   // SDK 确认的实际模型（从 system init 消息获取）
   let resolvedModel = modelId || 'claude-sonnet-4-5-20250929'
+  // 收集 stderr 输出用于错误诊断（声明在 try 之前，确保 catch 可访问）
+  const stderrChunks: string[] = []
 
   try {
     // 6. 动态导入 SDK（避免在 esbuild 打包时出问题）
@@ -542,9 +544,6 @@ export async function runAgent(
     ensureRipgrepAvailable(cliPath)
 
     console.log(`[Agent 服务] 启动 SDK — CLI: ${cliPath}, Bun: ${bunPath}, 模型: ${modelId || 'claude-sonnet-4-5-20250929'}, resume: ${existingSdkSessionId ?? '无'}`)
-
-    // 收集 stderr 输出用于错误诊断
-    const stderrChunks: string[] = []
 
     // 安全：--env-file=/dev/null 阻止 Bun 自动加载用户项目中的 .env 文件
     const nullDevice = process.platform === 'win32' ? 'NUL' : '/dev/null'
@@ -583,7 +582,7 @@ export async function runAgent(
     const mcpServers: Record<string, Record<string, unknown>> = {}
     if (workspaceSlug) {
       const mcpConfig = getWorkspaceMcpConfig(workspaceSlug)
-      for (const [name, entry] of Object.entries(mcpConfig.servers)) {
+      for (const [name, entry] of Object.entries(mcpConfig.servers ?? {})) {
         if (!entry.enabled) continue
 
         if (entry.type === 'stdio' && entry.command) {
