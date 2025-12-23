@@ -343,7 +343,7 @@ export function getWorkspaceCapabilities(workspaceSlug: string): WorkspaceCapabi
   const mcpConfig = getWorkspaceMcpConfig(workspaceSlug)
   const skills = getWorkspaceSkills(workspaceSlug)
 
-  const mcpServers = Object.entries(mcpConfig.servers).map(([name, entry]) => ({
+  const mcpServers = Object.entries(mcpConfig.servers ?? {}).map(([name, entry]) => ({
     name,
     enabled: entry.enabled,
     type: entry.type,
