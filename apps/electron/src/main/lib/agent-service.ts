@@ -33,7 +33,7 @@ import { appendAgentMessage, updateAgentSessionMeta, getAgentSessionMeta, getAge
 import { getAgentWorkspace } from './agent-workspace-manager'
 import { getAgentWorkspacePath, getAgentSessionWorkspacePath } from './config-paths'
 import { getRuntimeStatus } from './runtime-init'
-import { getWorkspaceMcpConfig } from './agent-workspace-manager'
+import { getWorkspaceMcpConfig, ensurePluginManifest } from './agent-workspace-manager'
 import { buildSystemPromptAppend, buildDynamicContext } from './agent-prompt-builder'
 
 /** 活跃的 AbortController 映射（sessionId → controller） */
@@ -559,6 +559,9 @@ export async function runAgent(
         workspaceSlug = ws.slug
         workspace = ws
         console.log(`[Agent 服务] 使用 session 级别 cwd: ${agentCwd} (${ws.name}/${sessionId})`)
+
+        // 迁移兼容：确保已有工作区包含 SDK plugin manifest（否则 skills 不可发现）
+        ensurePluginManifest(ws.slug, ws.name)
 
         // 迁移兼容：旧会话在 workspace 级别 cwd 下创建，resume 在新 cwd 下会失败
         // 检测：有 sdkSessionId 但 session 目录为空（刚创建）→ 清除 sdkSessionId，回填历史上下文
