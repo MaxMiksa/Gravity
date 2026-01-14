@@ -275,7 +275,7 @@ function detectBackgroundEvents(
   const events: AgentEvent[] = []
 
   // 后台 Task 检测
-  if (entry.name === 'Task' && !isError && resultStr) {
+  if (entry.name === 'Task' && !isError && resultStr && entry.input.run_in_background === true) {
     const agentIdMatch = resultStr.match(/agentId:\s*([a-zA-Z0-9_-]+)/)
     if (agentIdMatch?.[1]) {
       const intentValue = entry.input._intent
