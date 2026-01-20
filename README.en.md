@@ -1,26 +1,26 @@
-# Proma
+# Gravity
 
 Next-generation AI desktop app with integrated agents. Local-first, multi-provider, fully open source.
 
 [中文](./README.md)
 
-![Proma Poster](https://img.erlich.fun/personal-blog/uPic/pb.png)
+![Gravity Poster](https://img.erlich.fun/personal-blog/uPic/pb.png)
 
 ### Commercial Version Running in Parallel
-Proma also offers a commercial version. If you need **cloud features** | **stable and reliable API** | **cost-effective subscription plans** | **simple user experience**, you're welcome to support the commercial version of Proma: https://proma.cool/download
+Gravity also offers a commercial version. If you need **cloud features** | **stable and reliable API** | **cost-effective subscription plans** | **simple user experience**, you're welcome to support the commercial version of Gravity: https://gravity.cool/download
 
-The core vision of Proma is not to replace any particular software. Currently, only the infrastructure of Proma has been implemented. Going forward, Proma will continue to build multi-agent collaboration (personal and team), agent connections with external services, Tools and Skills consolidation, and the ability to proactively provide software and suggestions based on user understanding and memory. Proma is evolving rapidly with the help of VibeCoding tools. PRs are welcome!
+The core vision of Gravity is not to replace any particular software. Currently, only the infrastructure of Gravity has been implemented. Going forward, Gravity will continue to build multi-agent collaboration (personal and team), agent connections with external services, Tools and Skills consolidation, and the ability to proactively provide software and suggestions based on user understanding and memory. Gravity is evolving rapidly with the help of VibeCoding tools. PRs are welcome!
 
 ## Screenshots
 
 Chat mode with multi-model switching and file attachment support.
-![Proma Chat Mode](https://img.erlich.fun/personal-blog/uPic/tBXRKI.png)
+![Gravity Chat Mode](https://img.erlich.fun/personal-blog/uPic/tBXRKI.png)
 Agent mode with general-purpose agent capabilities. Supports the full Claude series, MiniMax M2.1, Kimi K2.5, Zhipu GLM, and third-party channels. Elegant, clean, smooth, and confident streaming output.
-![Proma Agent Mode](https://img.erlich.fun/personal-blog/uPic/3ZHWyA.png)
+![Gravity Agent Mode](https://img.erlich.fun/personal-blog/uPic/3ZHWyA.png)
 Built-in Brainstorming and office suite Skills with MCP support. Automatically helps you find and install Skills through conversation.
-![Proma Default Skills and Mcp](https://img.erlich.fun/personal-blog/uPic/PNBOSt.png)
+![Gravity Default Skills and Mcp](https://img.erlich.fun/personal-blog/uPic/PNBOSt.png)
 Full-protocol LLM channel support for all domestic and international providers, configured via Base URL + API Key.
-![Proma Mutili Provider Support](https://img.erlich.fun/personal-blog/uPic/uPPazd.png)
+![Gravity Mutili Provider Support](https://img.erlich.fun/personal-blog/uPic/uPPazd.png)
 
 ## Features
 
@@ -29,20 +29,55 @@ Full-protocol LLM channel support for all domestic and international providers, 
 - **Streaming & Thinking** — Real-time streaming output with extended thinking visualization
 - **Rich Rendering** — Mermaid diagrams, syntax-highlighted code blocks, Markdown
 - **Attachments & Documents** — Upload images and parse PDF/Office/text files in conversations
-- **Local-First** — All data stored locally in `~/.proma/`, no database, fully portable
+- **Local-First** — All data stored locally in `~/.gravity/`, no database, fully portable
 - **Themes** — Light and dark mode with system preference detection
 
 ## Getting Started
 
 Download the latest release for your platform:
 
-**[Download Proma](https://github.com/ErlichLiu/Proma/releases)**
+**[Download Gravity](https://github.com/MaxMiksa/Gravity/releases)**
+
+## Local Development (PowerShell)
+
+### Prerequisites
+
+- Bun (preferably close to the version expected by this repo)
+- Node.js (used by parts of the script/electron chain)
+
+### Start Steps
+
+```powershell
+# 1) Install dependencies (first run or after dependency updates)
+bun install
+
+# 2) Prevent Electron from running in Node mode (common Windows env issue)
+Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
+
+# 3) Start dev mode (Vite + Electron)
+npm run dev
+```
+
+### Fallback Startup
+
+```powershell
+# Start Electron directly under apps/electron
+Set-Location apps/electron
+npx electron .
+```
+
+### Common Issues
+
+- Port conflict on `5173`
+  - Stop the process using the port, then retry.
+- Electron `whenReady` error
+  - Ensure you cleared `ELECTRON_RUN_AS_NODE` first.
 
 ## Configuration
 
 ### Adding a Channel
 
-Go to **Settings > Channels**, click **Add Channel**, select a provider, and enter your API Key. Proma will auto-fill the correct API endpoint. Click **Test Connection** to verify, then **Fetch Models** to load available models.
+Go to **Settings > Channels**, click **Add Channel**, select a provider, and enter your API Key. Gravity will auto-fill the correct API endpoint. Click **Test Connection** to verify, then **Fetch Models** to load available models.
 
 ### Agent Mode (Anthropic Only)
 
@@ -69,7 +104,7 @@ MiniMax, Kimi (Moonshot), and Zhipu GLM use dedicated API endpoints — these ar
 
 ## Credits
 
-Proma is built on the shoulders of these great projects:
+Gravity is built on the shoulders of these great projects:
 
 - [Shiki](https://shiki.style/) — Syntax highlighting
 - [Beautiful Mermaid](https://github.com/lukilabs/beautiful-mermaid) — Diagram rendering
