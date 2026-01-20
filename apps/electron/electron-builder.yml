@@ -1,9 +1,9 @@
 # electron-builder 配置
 # 文档: https://www.electron.build/configuration/configuration
 
-appId: com.proma.app
-productName: Proma
-copyright: Copyright © 2024-2025 Proma
+appId: com.gravity.app
+productName: Gravity
+copyright: Copyright © 2024-2025 Gravity
 
 # Electron 版本（CI 环境 bun workspace 下无法自动检测，需显式指定）
 electronVersion: 39.5.1
@@ -27,7 +27,7 @@ files:
   - dist/**/*
   - package.json
   # 排除 workspace 包的 symlink（代码已被 esbuild/Vite 打包到 dist/ 中）
-  - "!node_modules/@proma/**"
+  - "!node_modules/@gravity/**"
   # 排除所有平台的 ripgrep，会在平台特定配置中添加正确的版本
   - "!node_modules/@anthropic-ai/claude-agent-sdk/vendor/ripgrep/**/*"
 
@@ -37,7 +37,7 @@ extraResources:
     to: app/node_modules/@anthropic-ai/claude-agent-sdk
     filter:
       - "**/*"
-  # 默认 Skills 模板（首次启动时同步到 ~/.proma/default-skills/）
+  # 默认 Skills 模板（首次启动时同步到 ~/.gravity/default-skills/）
   - from: default-skills
     to: default-skills
     filter:
@@ -122,4 +122,4 @@ nsis:
 publish:
   provider: github
   owner: ErlichLiu
-  repo: Proma
+  repo: Gravity
