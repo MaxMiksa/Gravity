@@ -1,7 +1,7 @@
 {
-  "name": "@proma/electron",
+  "name": "@gravity/electron",
   "version": "0.4.3",
-  "description": "Proma next gen ai software with general agents - Electron App",
+  "description": "Gravity next gen ai software with general agents - Electron App",
   "main": "dist/main.cjs",
   "author": {
     "name": "ErlichLiu",
@@ -13,7 +13,7 @@
     "dev": "concurrently -k -n vite,electron -c blue,green \"bun run dev:vite\" \"bun run dev:electron\"",
     "dev:split": "concurrently -k -n vite,electron -c blue,green --hide 0 \"bun run dev:vite\" \"bun run dev:electron\"",
     "dev:vite": "vite dev",
-    "dev:electron": "bun run build:main && bun run build:preload && bun run build:resources && sleep 2 && concurrently -k -n main,preload,app -c yellow,magenta,cyan \"bun run watch:main\" \"bun run watch:preload\" \"bunx electronmon .\"",
+    "dev:electron": "bun run build:main && bun run build:preload && bun run build:resources && node -e \"setTimeout(() => {}, 2000)\" && concurrently -k -n main,preload,app -c yellow,magenta,cyan \"bun run watch:main\" \"bun run watch:preload\" \"bunx electronmon .\"",
     "build:main": "esbuild src/main/index.ts --bundle --platform=node --format=cjs --outfile=dist/main.cjs --external:electron --external:@anthropic-ai/claude-agent-sdk --external:electron-updater",
     "build:preload": "esbuild src/preload/index.ts --bundle --platform=node --format=cjs --outfile=dist/preload.cjs --external:electron",
     "watch:main": "esbuild src/main/index.ts --bundle --platform=node --format=cjs --outfile=dist/main.cjs --external:electron --external:@anthropic-ai/claude-agent-sdk --external:electron-updater --watch=forever",
@@ -40,9 +40,9 @@
     "@anthropic-ai/claude-agent-sdk": "^0.2.37",
     "@emoji-mart/data": "^1.2.1",
     "@emoji-mart/react": "^1.1.1",
-    "@proma/core": "workspace:*",
-    "@proma/shared": "workspace:*",
-    "@proma/ui": "workspace:*",
+    "@gravity/core": "workspace:*",
+    "@gravity/shared": "workspace:*",
+    "@gravity/ui": "workspace:*",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-context-menu": "^2.2.16",
@@ -105,7 +105,7 @@
   "build": {
     "extends": "electron-builder.yml"
   },
-  "proma": {
+  "gravity": {
     "bun": {
       "version": "1.2.5"
     }

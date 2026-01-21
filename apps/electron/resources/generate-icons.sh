@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Proma Icon Generation Script
+# Gravity Icon Generation Script
 # Generates all required icon formats from icon.svg
 # Requires: rsvg-convert (librsvg), iconutil (macOS), magick (ImageMagick)
 
@@ -9,7 +9,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-echo "🎨 Generating Proma icons..."
+echo "🎨 Generating Gravity icons..."
 
 # Check required tools
 if ! command -v rsvg-convert &> /dev/null; then
@@ -38,20 +38,20 @@ echo "📦 Generating tray icons..."
 # - @2x Retina: 44x44px
 # - @3x 高分辨率: 66x66px
 # 使用 "Template" 命名让 macOS 自动适配深色/浅色菜单栏
-TRAY_SVG="proma-logos/icon.svg"
+TRAY_SVG="gravity-logos/icon.svg"
 
 if [ ! -f "$TRAY_SVG" ]; then
   echo "⚠️  Tray icon SVG not found at $TRAY_SVG, skipping tray icon generation"
 else
   # 生成多分辨率 Template 图标（macOS 会自动选择合适的版本）
-  rsvg-convert -w 22 -h 22 "$TRAY_SVG" -o proma-logos/iconTemplate.png
-  rsvg-convert -w 44 -h 44 "$TRAY_SVG" -o "proma-logos/iconTemplate@2x.png"
-  rsvg-convert -w 66 -h 66 "$TRAY_SVG" -o "proma-logos/iconTemplate@3x.png"
+  rsvg-convert -w 22 -h 22 "$TRAY_SVG" -o gravity-logos/iconTemplate.png
+  rsvg-convert -w 44 -h 44 "$TRAY_SVG" -o "gravity-logos/iconTemplate@2x.png"
+  rsvg-convert -w 66 -h 66 "$TRAY_SVG" -o "gravity-logos/iconTemplate@3x.png"
 
   echo "✅ Tray icons generated:"
-  echo "   - proma-logos/iconTemplate.png (22x22 @1x)"
-  echo "   - proma-logos/iconTemplate@2x.png (44x44 @2x Retina)"
-  echo "   - proma-logos/iconTemplate@3x.png (66x66 @3x)"
+  echo "   - gravity-logos/iconTemplate.png (22x22 @1x)"
+  echo "   - gravity-logos/iconTemplate@2x.png (44x44 @2x Retina)"
+  echo "   - gravity-logos/iconTemplate@3x.png (66x66 @3x)"
 fi
 
 # 3. Generate .icns (macOS app icon)
@@ -97,6 +97,6 @@ echo "Generated files:"
 echo "  - icon.png (1024x1024) - Linux & macOS Dock"
 echo "  - icon.icns - macOS app icon"
 echo "  - icon.ico - Windows app icon"
-echo "  - proma-logos/iconTemplate.png - macOS tray (22x22 @1x)"
-echo "  - proma-logos/iconTemplate@2x.png - macOS tray (44x44 @2x Retina)"
-echo "  - proma-logos/iconTemplate@3x.png - macOS tray (66x66 @3x)"
+echo "  - gravity-logos/iconTemplate.png - macOS tray (22x22 @1x)"
+echo "  - gravity-logos/iconTemplate@2x.png - macOS tray (44x44 @2x Retina)"
+echo "  - gravity-logos/iconTemplate@3x.png - macOS tray (66x66 @3x)"
