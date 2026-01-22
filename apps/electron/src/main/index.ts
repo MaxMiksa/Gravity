@@ -109,7 +109,7 @@ app.whenReady().then(async () => {
   // 必须在其他初始化之前执行，确保环境变量正确加载
   await initializeRuntime()
 
-  // 同步默认 Skills 模板到 ~/.proma/default-skills/
+  // 同步默认 Skills 模板到 ~/.gravity/default-skills/
   seedDefaultSkills()
 
   // Create application menu
