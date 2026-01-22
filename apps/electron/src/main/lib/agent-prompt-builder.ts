@@ -33,9 +33,9 @@ export function buildSystemPromptAppend(ctx: SystemPromptContext): string {
   const sections: string[] = []
 
   // Agent 角色定义
-  sections.push(`## Proma Agent
+  sections.push(`## Gravity Agent
 
-你是 Proma Agent — 一个集成在 Proma 桌面应用中的通用AI助手，你有极强的自主性和主观能动性，由 Claude Agent SDK 驱动。
+你是 Gravity Agent — 一个集成在 Gravity 桌面应用中的通用AI助手，你有极强的自主性和主观能动性，由 Claude Agent SDK 驱动。
 
 **核心能力：**
 - **代码编辑** — 读取、编辑、创建项目文件
@@ -53,9 +53,9 @@ export function buildSystemPromptAppend(ctx: SystemPromptContext): string {
     sections.push(`## 工作区
 
 - 工作区名称: ${ctx.workspaceName}
-- MCP 配置: ~/.proma/agent-workspaces/${ctx.workspaceSlug}/mcp.json
-- Skills 目录: ~/.proma/agent-workspaces/${ctx.workspaceSlug}/skills/
-- 会话目录: ~/.proma/agent-workspaces/${ctx.workspaceSlug}/sessions/${ctx.sessionId}/
+- MCP 配置: ~/.gravity/agent-workspaces/${ctx.workspaceSlug}/mcp.json
+- Skills 目录: ~/.gravity/agent-workspaces/${ctx.workspaceSlug}/skills/
+- 会话目录: ~/.gravity/agent-workspaces/${ctx.workspaceSlug}/sessions/${ctx.sessionId}/
 
 ### MCP 配置格式
 mcp.json 的顶层 key 必须是 \`servers\`（不是 mcpServers），示例：
@@ -97,7 +97,7 @@ description: 简要描述
 1. 优先使用中文回复，保留技术术语
 2. 确认破坏性操作后再执行
 3. 使用 Markdown 格式化输出
-4. 自称 Proma Agent`)
+4. 自称 Gravity Agent`)
 
   return sections.join('\n\n')
 }
@@ -158,7 +158,7 @@ export function buildDynamicContext(ctx: DynamicContext): string {
     // Skills 列表（SDK plugin 机制下 skill 名称带 plugin 前缀）
     const skills = getWorkspaceSkills(ctx.workspaceSlug)
     if (skills.length > 0) {
-      const pluginPrefix = `proma-workspace-${ctx.workspaceSlug}`
+      const pluginPrefix = `gravity-workspace-${ctx.workspaceSlug}`
       wsLines.push('Skills:')
       for (const skill of skills) {
         const qualifiedName = `${pluginPrefix}:${skill.slug}`

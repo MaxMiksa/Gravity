@@ -20,19 +20,19 @@ import { writeFileSync, mkdirSync, cpSync, readdirSync, statSync, existsSync, sy
 import { createRequire } from 'node:module'
 import { app } from 'electron'
 import type { WebContents } from 'electron'
-import { AGENT_IPC_CHANNELS } from '@proma/shared'
-import type { AgentSendInput, AgentEvent, AgentMessage, AgentStreamEvent, AgentGenerateTitleInput, AgentSaveFilesInput, AgentSavedFile, AgentCopyFolderInput } from '@proma/shared'
+import { AGENT_IPC_CHANNELS } from '@gravity/shared'
+import type { AgentSendInput, AgentEvent, AgentMessage, AgentStreamEvent, AgentGenerateTitleInput, AgentSaveFilesInput, AgentSavedFile, AgentCopyFolderInput } from '@gravity/shared'
 import {
   ToolIndex,
   extractToolStarts,
   extractToolResults,
   type ContentBlock,
-} from '@proma/shared'
+} from '@gravity/shared'
 import { decryptApiKey, getChannelById, listChannels } from './channel-manager'
 import {
   getAdapter,
   fetchTitle,
-} from '@proma/core'
+} from '@gravity/core'
 import { appendAgentMessage, updateAgentSessionMeta, getAgentSessionMeta, getAgentSessionMessages } from './agent-session-manager'
 import { getAgentWorkspace } from './agent-workspace-manager'
 import { getAgentWorkspacePath, getAgentSessionWorkspacePath } from './config-paths'
@@ -555,7 +555,7 @@ export async function runAgent(
     // 确定 Agent 工作目录：优先使用 session 级别路径
     let agentCwd = homedir()
     let workspaceSlug: string | undefined
-    let workspace: import('@proma/shared').AgentWorkspace | undefined
+    let workspace: import('@gravity/shared').AgentWorkspace | undefined
     if (workspaceId) {
       const ws = getAgentWorkspace(workspaceId)
       if (ws) {
