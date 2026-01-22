@@ -160,7 +160,7 @@ function main(): void {
   const results: StepResult[] = []
 
   // 打印配置信息
-  console.log(`\n${color.bgBlue}${color.bold} Proma 打包工具 ${color.reset}\n`)
+  console.log(`\n${color.bgBlue}${color.bold} Gravity 打包工具 ${color.reset}\n`)
   console.log(`  ${color.bold}平台${color.reset}:     ${opts.platform}`)
   console.log(`  ${color.bold}架构${color.reset}:     ${opts.currentArch ? arch + ' (仅当前)' : 'arm64 + x64'}`)
   console.log(`  ${color.bold}格式${color.reset}:     ${opts.targetFormat}`)
