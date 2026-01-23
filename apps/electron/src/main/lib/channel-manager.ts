@@ -3,7 +3,7 @@
  *
  * 负责渠道的 CRUD 操作、API Key 加密/解密、连接测试。
  * 使用 Electron safeStorage 进行 API Key 加密（底层使用 OS 级加密）。
- * 数据持久化到 ~/.proma/channels.json。
+ * 数据持久化到 ~/.gravity/channels.json。
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
@@ -20,7 +20,7 @@ import type {
   FetchModelsInput,
   FetchModelsResult,
   ProviderType,
-} from '@proma/shared'
+} from '@gravity/shared'
 
 /** 当前配置版本 */
 const CONFIG_VERSION = 1
