@@ -2,8 +2,8 @@
  * Agent 工作区管理器
  *
  * 负责 Agent 工作区的 CRUD 操作。
- * - 工作区索引：~/.proma/agent-workspaces.json（轻量元数据）
- * - 工作区目录：~/.proma/agent-workspaces/{slug}/（Agent 的 cwd）
+ * - 工作区索引：~/.gravity/agent-workspaces.json（轻量元数据）
+ * - 工作区目录：~/.gravity/agent-workspaces/{slug}/（Agent 的 cwd）
  *
  * 照搬 agent-session-manager.ts 的 readIndex/writeIndex 模式。
  */
@@ -18,7 +18,7 @@ import {
   getWorkspaceSkillsDir,
   getDefaultSkillsDir,
 } from './config-paths'
-import type { AgentWorkspace, WorkspaceMcpConfig, SkillMeta, WorkspaceCapabilities } from '@proma/shared'
+import type { AgentWorkspace, WorkspaceMcpConfig, SkillMeta, WorkspaceCapabilities } from '@gravity/shared'
 
 /**
  * 工作区索引文件格式
@@ -112,7 +112,7 @@ export function getAgentWorkspace(id: string): AgentWorkspace | undefined {
 /**
  * 将默认 Skills 模板复制到工作区 skills/ 目录
  *
- * 从 ~/.proma/default-skills/ 复制所有内容。
+ * 从 ~/.gravity/default-skills/ 复制所有内容。
  * 如果模板目录不存在或为空则跳过。
  */
 function copyDefaultSkills(workspaceSlug: string): void {
@@ -269,7 +269,7 @@ export function ensurePluginManifest(workspaceSlug: string, workspaceName: strin
   }
 
   const manifest = {
-    name: `proma-workspace-${workspaceSlug}`,
+    name: `gravity-workspace-${workspaceSlug}`,
     version: '1.0.0',
   }
 

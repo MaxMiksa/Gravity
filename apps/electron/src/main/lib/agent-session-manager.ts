@@ -2,8 +2,8 @@
  * Agent 会话管理器
  *
  * 负责 Agent 会话的 CRUD 操作和消息持久化。
- * - 会话索引：~/.proma/agent-sessions.json（轻量元数据）
- * - 消息存储：~/.proma/agent-sessions/{id}.jsonl（JSONL 格式，逐行追加）
+ * - 会话索引：~/.gravity/agent-sessions.json（轻量元数据）
+ * - 消息存储：~/.gravity/agent-sessions/{id}.jsonl（JSONL 格式，逐行追加）
  *
  * 照搬 conversation-manager.ts 的模式。
  */
@@ -17,7 +17,7 @@ import {
   getAgentSessionWorkspacePath,
 } from './config-paths'
 import { getAgentWorkspace } from './agent-workspace-manager'
-import type { AgentSessionMeta, AgentMessage } from '@proma/shared'
+import type { AgentSessionMeta, AgentMessage } from '@gravity/shared'
 
 /**
  * 会话索引文件格式
