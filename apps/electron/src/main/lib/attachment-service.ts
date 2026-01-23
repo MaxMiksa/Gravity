@@ -2,7 +2,7 @@
  * 附件存储服务
  *
  * 负责文件附件的本地存储、读取和删除。
- * 存储路径：~/.proma/attachments/{conversationId}/{uuid}.ext
+ * 存储路径：~/.gravity/attachments/{conversationId}/{uuid}.ext
  *
  * - 保存：base64 解码 → 写入文件
  * - 读取：文件 → base64 编码（用于 API 发送）
@@ -23,7 +23,7 @@ import type {
   AttachmentSaveInput,
   AttachmentSaveResult,
   FileDialogResult,
-} from '@proma/shared'
+} from '@gravity/shared'
 
 /** 支持的图片 MIME 类型 */
 const IMAGE_MIME_TYPES = new Set([
@@ -98,7 +98,7 @@ export function getMimeType(ext: string): string {
  * 保存附件到本地
  *
  * 将 base64 编码的文件数据解码后写入
- * ~/.proma/attachments/{conversationId}/{uuid}.ext
+ * ~/.gravity/attachments/{conversationId}/{uuid}.ext
  *
  * @param input 保存附件参数
  * @returns 保存结果，包含附件元信息
@@ -172,7 +172,7 @@ export function deleteAttachment(localPath: string): void {
 /**
  * 删除对话的全部附件
  *
- * 删除整个 ~/.proma/attachments/{conversationId}/ 目录。
+ * 删除整个 ~/.gravity/attachments/{conversationId}/ 目录。
  *
  * @param conversationId 对话 ID
  */

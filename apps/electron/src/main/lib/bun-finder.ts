@@ -10,7 +10,7 @@ import { existsSync } from 'fs'
 import { join, dirname } from 'path'
 import { execSync, spawnSync } from 'child_process'
 import { app } from 'electron'
-import type { BunRuntimeStatus, PlatformArch } from '@proma/shared'
+import type { BunRuntimeStatus, PlatformArch } from '@gravity/shared'
 
 /**
  * 获取当前平台架构标识
