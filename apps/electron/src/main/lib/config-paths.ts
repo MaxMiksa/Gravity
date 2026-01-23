@@ -1,8 +1,8 @@
 /**
  * 配置路径工具
  *
- * 管理 Proma 应用的本地配置文件路径。
- * 所有用户配置存储在 ~/.proma/ 目录下。
+ * 管理 Gravity 应用的本地配置文件路径。
+ * 所有用户配置存储在 ~/.gravity/ 目录下。
  */
 
 import { join } from 'node:path'
@@ -10,12 +10,12 @@ import { mkdirSync, existsSync, cpSync, readdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 
 /** 配置目录名称 */
-const CONFIG_DIR_NAME = '.proma'
+const CONFIG_DIR_NAME = '.gravity'
 
 /**
  * 获取配置目录路径
  *
- * 返回 ~/.proma/，如果目录不存在则自动创建。
+ * 返回 ~/.gravity/，如果目录不存在则自动创建。
  */
 export function getConfigDir(): string {
   const configDir = join(homedir(), CONFIG_DIR_NAME)
@@ -31,7 +31,7 @@ export function getConfigDir(): string {
 /**
  * 获取渠道配置文件路径
  *
- * @returns ~/.proma/channels.json
+ * @returns ~/.gravity/channels.json
  */
 export function getChannelsPath(): string {
   return join(getConfigDir(), 'channels.json')
@@ -40,7 +40,7 @@ export function getChannelsPath(): string {
 /**
  * 获取对话索引文件路径
  *
- * @returns ~/.proma/conversations.json
+ * @returns ~/.gravity/conversations.json
  */
 export function getConversationsIndexPath(): string {
   return join(getConfigDir(), 'conversations.json')
@@ -51,7 +51,7 @@ export function getConversationsIndexPath(): string {
  *
  * 如果目录不存在则自动创建。
  *
- * @returns ~/.proma/conversations/
+ * @returns ~/.gravity/conversations/
  */
 export function getConversationsDir(): string {
   const dir = join(getConfigDir(), 'conversations')
@@ -68,7 +68,7 @@ export function getConversationsDir(): string {
  * 获取指定对话的消息文件路径
  *
  * @param id 对话 ID
- * @returns ~/.proma/conversations/{id}.jsonl
+ * @returns ~/.gravity/conversations/{id}.jsonl
  */
 export function getConversationMessagesPath(id: string): string {
   return join(getConversationsDir(), `${id}.jsonl`)
@@ -79,7 +79,7 @@ export function getConversationMessagesPath(id: string): string {
  *
  * 如果目录不存在则自动创建。
  *
- * @returns ~/.proma/attachments/
+ * @returns ~/.gravity/attachments/
  */
 export function getAttachmentsDir(): string {
   const dir = join(getConfigDir(), 'attachments')
@@ -98,7 +98,7 @@ export function getAttachmentsDir(): string {
  * 如果目录不存在则自动创建。
  *
  * @param conversationId 对话 ID
- * @returns ~/.proma/attachments/{conversationId}/
+ * @returns ~/.gravity/attachments/{conversationId}/
  */
 export function getConversationAttachmentsDir(conversationId: string): string {
   const dir = join(getAttachmentsDir(), conversationId)
@@ -114,7 +114,7 @@ export function getConversationAttachmentsDir(conversationId: string): string {
  * 解析附件相对路径为完整路径
  *
  * @param localPath 相对路径 {conversationId}/{uuid}.ext
- * @returns 完整路径 ~/.proma/attachments/{conversationId}/{uuid}.ext
+ * @returns 完整路径 ~/.gravity/attachments/{conversationId}/{uuid}.ext
  */
 export function resolveAttachmentPath(localPath: string): string {
   return join(getAttachmentsDir(), localPath)
@@ -123,7 +123,7 @@ export function resolveAttachmentPath(localPath: string): string {
 /**
  * 获取应用设置文件路径
  *
- * @returns ~/.proma/settings.json
+ * @returns ~/.gravity/settings.json
  */
 export function getSettingsPath(): string {
   return join(getConfigDir(), 'settings.json')
@@ -132,7 +132,7 @@ export function getSettingsPath(): string {
 /**
  * 获取用户档案文件路径
  *
- * @returns ~/.proma/user-profile.json
+ * @returns ~/.gravity/user-profile.json
  */
 export function getUserProfilePath(): string {
   return join(getConfigDir(), 'user-profile.json')
@@ -141,7 +141,7 @@ export function getUserProfilePath(): string {
 /**
  * 获取 Agent 会话索引文件路径
  *
- * @returns ~/.proma/agent-sessions.json
+ * @returns ~/.gravity/agent-sessions.json
  */
 export function getAgentSessionsIndexPath(): string {
   return join(getConfigDir(), 'agent-sessions.json')
@@ -152,7 +152,7 @@ export function getAgentSessionsIndexPath(): string {
  *
  * 如果目录不存在则自动创建。
  *
- * @returns ~/.proma/agent-sessions/
+ * @returns ~/.gravity/agent-sessions/
  */
 export function getAgentSessionsDir(): string {
   const dir = join(getConfigDir(), 'agent-sessions')
@@ -169,7 +169,7 @@ export function getAgentSessionsDir(): string {
  * 获取指定 Agent 会话的消息文件路径
  *
  * @param id 会话 ID
- * @returns ~/.proma/agent-sessions/{id}.jsonl
+ * @returns ~/.gravity/agent-sessions/{id}.jsonl
  */
 export function getAgentSessionMessagesPath(id: string): string {
   return join(getAgentSessionsDir(), `${id}.jsonl`)
@@ -178,7 +178,7 @@ export function getAgentSessionMessagesPath(id: string): string {
 /**
  * 获取 Agent 工作区索引文件路径
  *
- * @returns ~/.proma/agent-workspaces.json
+ * @returns ~/.gravity/agent-workspaces.json
  */
 export function getAgentWorkspacesIndexPath(): string {
   return join(getConfigDir(), 'agent-workspaces.json')
@@ -189,7 +189,7 @@ export function getAgentWorkspacesIndexPath(): string {
  *
  * 如果目录不存在则自动创建。
  *
- * @returns ~/.proma/agent-workspaces/
+ * @returns ~/.gravity/agent-workspaces/
  */
 export function getAgentWorkspacesDir(): string {
   const dir = join(getConfigDir(), 'agent-workspaces')
@@ -208,7 +208,7 @@ export function getAgentWorkspacesDir(): string {
  * 如果目录不存在则自动创建。
  *
  * @param slug 工作区 slug
- * @returns ~/.proma/agent-workspaces/{slug}/
+ * @returns ~/.gravity/agent-workspaces/{slug}/
  */
 export function getAgentWorkspacePath(slug: string): string {
   const dir = join(getAgentWorkspacesDir(), slug)
@@ -225,7 +225,7 @@ export function getAgentWorkspacePath(slug: string): string {
  * 获取指定工作区的 MCP 配置文件路径
  *
  * @param slug 工作区 slug
- * @returns ~/.proma/agent-workspaces/{slug}/mcp.json
+ * @returns ~/.gravity/agent-workspaces/{slug}/mcp.json
  */
 export function getWorkspaceMcpPath(slug: string): string {
   return join(getAgentWorkspacePath(slug), 'mcp.json')
@@ -237,7 +237,7 @@ export function getWorkspaceMcpPath(slug: string): string {
  * 如果目录不存在则自动创建。
  *
  * @param slug 工作区 slug
- * @returns ~/.proma/agent-workspaces/{slug}/skills/
+ * @returns ~/.gravity/agent-workspaces/{slug}/skills/
  */
 export function getWorkspaceSkillsDir(slug: string): string {
   const dir = join(getAgentWorkspacePath(slug), 'skills')
@@ -254,7 +254,7 @@ export function getWorkspaceSkillsDir(slug: string): string {
  *
  * 新建工作区时自动复制此目录的内容到工作区 skills/ 下。
  *
- * @returns ~/.proma/default-skills/
+ * @returns ~/.gravity/default-skills/
  */
 export function getDefaultSkillsDir(): string {
   const dir = join(getConfigDir(), 'default-skills')
@@ -267,7 +267,7 @@ export function getDefaultSkillsDir(): string {
 }
 
 /**
- * 从 app bundle 同步默认 Skills 到 ~/.proma/default-skills/
+ * 从 app bundle 同步默认 Skills 到 ~/.gravity/default-skills/
  *
  * 打包模式下从 process.resourcesPath/default-skills 复制。
  * 仅补充缺失的 Skill 目录，不覆盖用户已有的内容。
@@ -310,7 +310,7 @@ export function seedDefaultSkills(): void {
  *
  * @param workspaceSlug 工作区 slug
  * @param sessionId 会话 ID
- * @returns ~/.proma/agent-workspaces/{slug}/{sessionId}/
+ * @returns ~/.gravity/agent-workspaces/{slug}/{sessionId}/
  */
 export function getAgentSessionWorkspacePath(workspaceSlug: string, sessionId: string): string {
   const dir = join(getAgentWorkspacePath(workspaceSlug), sessionId)
