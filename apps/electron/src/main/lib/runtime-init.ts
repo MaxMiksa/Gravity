@@ -7,7 +7,7 @@
  * 3. Git 运行时检测
  */
 
-import type { RuntimeStatus, RuntimeInitOptions } from '@proma/shared'
+import type { RuntimeStatus, RuntimeInitOptions } from '@gravity/shared'
 import { loadShellEnv } from './shell-env'
 import { detectBunRuntime } from './bun-finder'
 import { detectGitRuntime, getGitRepoStatus } from './git-detector'
