@@ -1,7 +1,7 @@
 /**
  * 工作区文件监听器
  *
- * 使用 fs.watch 递归监听 ~/.proma/agent-workspaces/ 目录，
+ * 使用 fs.watch 递归监听 ~/.gravity/agent-workspaces/ 目录，
  * 根据变化的文件路径区分事件类型：
  * - mcp.json / skills/ 变化 → 推送 CAPABILITIES_CHANGED（侧边栏刷新）
  * - 其他文件变化 → 推送 WORKSPACE_FILES_CHANGED（文件浏览器刷新）
@@ -12,7 +12,7 @@
 import { watch, existsSync } from 'node:fs'
 import type { FSWatcher } from 'node:fs'
 import type { BrowserWindow } from 'electron'
-import { AGENT_IPC_CHANNELS } from '@proma/shared'
+import { AGENT_IPC_CHANNELS } from '@gravity/shared'
 import { getAgentWorkspacesDir } from './config-paths'
 
 /** debounce 延迟（ms） */
