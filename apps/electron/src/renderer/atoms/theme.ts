@@ -2,7 +2,7 @@
  * 主题状态原子
  *
  * 管理应用主题模式（浅色/深色/跟随系统）。
- * - themeModeAtom: 用户选择的主题模式，持久化到 ~/.proma/settings.json
+ * - themeModeAtom: 用户选择的主题模式，持久化到 ~/.gravity/settings.json
  * - systemIsDarkAtom: 系统当前是否为深色模式
  * - resolvedThemeAtom: 派生的最终主题（light | dark）
  *
@@ -13,7 +13,7 @@ import { atom } from 'jotai'
 import type { ThemeMode } from '../../types'
 
 /** localStorage 缓存键 */
-const THEME_CACHE_KEY = 'proma-theme-mode'
+const THEME_CACHE_KEY = 'gravity-theme-mode'
 
 /**
  * 从 localStorage 读取缓存的主题模式
