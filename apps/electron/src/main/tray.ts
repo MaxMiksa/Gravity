@@ -9,7 +9,7 @@ let tray: Tray | null = null
  * 所有平台统一使用 Template 图标
  */
 function getTrayIconPath(): string {
-  const resourcesDir = join(__dirname, '../resources/proma-logos')
+  const resourcesDir = join(__dirname, '../resources/gravity-logos')
   // 使用 Template 图标：
   // - macOS: 系统自动根据 DPI 选择 @1x/@2x/@3x，并根据菜单栏主题调整颜色
   // - Windows/Linux: 直接使用白色图标
@@ -40,12 +40,12 @@ export function createTray(): Tray | null {
     tray = new Tray(image)
 
     // 设置 tooltip
-    tray.setToolTip('Proma')
+    tray.setToolTip('Gravity')
 
     // 创建右键菜单
     const contextMenu = Menu.buildFromTemplate([
       {
-        label: '显示 Proma',
+        label: '显示 Gravity',
         click: () => {
           // 显示/聚焦主窗口
           const windows = require('electron').BrowserWindow.getAllWindows()
@@ -63,7 +63,7 @@ export function createTray(): Tray | null {
         type: 'separator'
       },
       {
-        label: '退出 Proma',
+        label: '退出 Gravity',
         click: () => {
           app.quit()
         }
