@@ -22,7 +22,7 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from '@/components/ai-elements/conversation'
-import { useSmoothStream } from '@proma/ui'
+import { useSmoothStream } from '@gravity/ui'
 import { UserAvatar } from '@/components/chat/UserAvatar'
 import { formatMessageTime } from '@/components/chat/ChatMessageItem'
 import { getModelLogo } from '@/lib/model-logo'
@@ -35,7 +35,7 @@ import {
   agentModelIdAtom,
 } from '@/atoms/agent-atoms'
 import { userProfileAtom } from '@/atoms/user-profile'
-import type { AgentMessage } from '@proma/shared'
+import type { AgentMessage } from '@gravity/shared'
 import type { ToolActivity } from '@/atoms/agent-atoms'
 
 function EmptyState(): React.ReactElement {
