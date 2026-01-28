@@ -2,7 +2,7 @@
  * AI Elements - 上下文分隔线
  *
  * 虚线分隔 + "清除上下文" 标签 + 删除按钮。
- * 移植自 proma-frontend 的 ai-elements/context-divider.tsx。
+ * 移植自 gravity-frontend 的 ai-elements/context-divider.tsx。
  */
 
 import { Button } from '@/components/ui/button'
