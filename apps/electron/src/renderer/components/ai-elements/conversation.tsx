@@ -2,7 +2,7 @@
  * AI Elements - 对话容器原语
  *
  * 基于 use-stick-to-bottom 实现自动滚动到底部的对话容器。
- * 移植自 proma-frontend 的 ai-elements/conversation.tsx。
+ * 移植自 gravity-frontend 的 ai-elements/conversation.tsx。
  *
  * 包含：
  * - Conversation — 根容器（StickToBottom）
