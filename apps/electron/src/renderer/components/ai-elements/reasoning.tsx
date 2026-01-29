@@ -1,7 +1,7 @@
 /**
  * AI Elements - 推理/思考折叠组件
  *
- * 简化迁移自 proma-frontend 的 ai-elements/reasoning.tsx。
+ * 简化迁移自 gravity-frontend 的 ai-elements/reasoning.tsx。
  *
  * 特性：
  * - Collapsible 包装，streaming 时自动展开

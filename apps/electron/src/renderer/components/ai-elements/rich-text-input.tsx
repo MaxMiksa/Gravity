@@ -2,7 +2,7 @@
  * AI Elements - TipTap 富文本输入组件
  *
  * 独立受控组件，不依赖 PromptInput Provider。
- * 移植自 proma-frontend 的 ai-elements/rich-text-input.tsx，
+ * 移植自 gravity-frontend 的 ai-elements/rich-text-input.tsx，
  * 去掉了粘贴图片处理和 Backspace 删除附件逻辑。
  *
  * 功能：
