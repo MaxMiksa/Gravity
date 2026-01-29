@@ -34,7 +34,7 @@ import { DeleteMessageDialog } from './DeleteMessageDialog'
 import { UserAvatar } from './UserAvatar'
 import { getModelLogo } from '@/lib/model-logo'
 import { userProfileAtom } from '@/atoms/user-profile'
-import type { ChatMessage } from '@proma/shared'
+import type { ChatMessage } from '@gravity/shared'
 
 /**
  * 格式化消息时间（简略写法）

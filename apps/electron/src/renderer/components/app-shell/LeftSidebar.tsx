@@ -50,7 +50,7 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import type { ActiveView } from '@/atoms/active-view'
-import type { ConversationMeta, AgentSessionMeta, WorkspaceCapabilities } from '@proma/shared'
+import type { ConversationMeta, AgentSessionMeta, WorkspaceCapabilities } from '@gravity/shared'
 
 interface SidebarItemProps {
   icon: React.ReactNode
