@@ -37,7 +37,7 @@ import {
   ReasoningTrigger,
   ReasoningContent,
 } from '@/components/ai-elements/reasoning'
-import { useSmoothStream } from '@proma/ui'
+import { useSmoothStream } from '@gravity/ui'
 import {
   currentMessagesAtom,
   streamingAtom,
@@ -50,7 +50,7 @@ import {
   currentConversationIdAtom,
 } from '@/atoms/chat-atoms'
 import { getModelLogo } from '@/lib/model-logo'
-import type { ChatMessage } from '@proma/shared'
+import type { ChatMessage } from '@gravity/shared'
 
 // ===== 滚动到顶部加载更多 =====
 

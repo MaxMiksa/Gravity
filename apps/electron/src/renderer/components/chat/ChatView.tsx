@@ -44,7 +44,7 @@ import type {
   StreamErrorEvent,
   FileAttachment,
   AttachmentSaveInput,
-} from '@proma/shared'
+} from '@gravity/shared'
 
 export function ChatView(): React.ReactElement {
   const currentConversationId = useAtomValue(currentConversationIdAtom)
