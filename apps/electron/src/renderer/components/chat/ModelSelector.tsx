@@ -24,7 +24,7 @@ import {
 } from '@/atoms/chat-atoms'
 import { getModelLogo, getChannelLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
-import type { Channel, ModelOption } from '@proma/shared'
+import type { Channel, ModelOption } from '@gravity/shared'
 
 /** 从渠道列表构建扁平化的模型选项 */
 function buildModelOptions(channels: Channel[], filterChannelId?: string): ModelOption[] {
