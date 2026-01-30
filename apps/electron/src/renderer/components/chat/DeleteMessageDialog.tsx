@@ -2,7 +2,7 @@
  * DeleteMessageDialog - 删除消息确认对话框
  *
  * AlertDialog 确认删除，黄色警告提示建议成对删除。
- * 移植自 proma-frontend 的 chat-view/delete-message-dialog.tsx。
+ * 移植自 gravity-frontend 的 chat-view/delete-message-dialog.tsx。
  */
 
 import {
