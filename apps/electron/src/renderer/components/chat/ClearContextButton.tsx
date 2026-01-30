@@ -2,7 +2,7 @@
  * ClearContextButton - 清除上下文按钮
  *
  * Eraser 图标 + tooltip 含 Cmd/Ctrl+K 快捷键提示。
- * 移植自 proma-frontend 的 chat-view/clear-context-button.tsx。
+ * 移植自 gravity-frontend 的 chat-view/clear-context-button.tsx。
  */
 
 import { Button } from '@/components/ui/button'

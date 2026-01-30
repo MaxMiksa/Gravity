@@ -2,7 +2,7 @@
  * ContextSettingsPopover - 上下文长度设置弹出层
  *
  * Popover 内含上下文长度 Slider（0/5/10/15/20/∞ 轮）。
- * 简化版移植自 proma-frontend，去掉 Token 估算部分。
+ * 简化版移植自 gravity-frontend，去掉 Token 估算部分。
  */
 
 import { useState } from 'react'
