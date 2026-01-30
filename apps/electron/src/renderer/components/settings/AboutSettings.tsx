@@ -141,7 +141,7 @@ function StatusText({ status, version, error }: {
 export function AboutSettings(): React.ReactElement {
   return (
     <SettingsSection
-      title="关于 Proma"
+      title="关于 Gravity"
       description="集成通用 AI Agent 的下一代人工智能软件"
     >
       <SettingsCard>
@@ -159,12 +159,12 @@ export function AboutSettings(): React.ReactElement {
         </SettingsRow>
         <SettingsRow label="项目地址">
           <a
-            href="https://github.com/ErlichLiu/Proma.git"
+            href="https://github.com/MaxMiksa/Gravity.git"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-primary hover:underline"
           >
-            github.com/ErlichLiu/Proma
+            github.com/MaxMiksa/Gravity
           </a>
         </SettingsRow>
       </SettingsCard>

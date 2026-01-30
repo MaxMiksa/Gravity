@@ -40,7 +40,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 import { workspaceFilesVersionAtom } from '@/atoms/agent-atoms'
-import type { FileEntry } from '@proma/shared'
+import type { FileEntry } from '@gravity/shared'
 
 /** 右键菜单状态 */
 interface ContextMenuState {
