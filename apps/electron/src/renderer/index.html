@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Proma</title>
+    <title>Gravity</title>
     <script>
       // 主题初始化脚本（在 React 加载前执行，避免闪烁）
       // 从 localStorage 缓存读取主题模式，立即应用 dark 类名
       ;(function() {
-        var mode = localStorage.getItem('proma-theme-mode') || 'dark'
+        var mode = localStorage.getItem('gravity-theme-mode') || 'dark'
         if (mode === 'dark') {
           document.documentElement.classList.add('dark')
         } else if (mode === 'system') {

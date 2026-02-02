@@ -8,7 +8,7 @@
 import * as React from 'react'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { McpServerEntry, McpTransportType, WorkspaceMcpConfig } from '@proma/shared'
+import type { McpServerEntry, McpTransportType, WorkspaceMcpConfig } from '@gravity/shared'
 import {
   SettingsSection,
   SettingsCard,
