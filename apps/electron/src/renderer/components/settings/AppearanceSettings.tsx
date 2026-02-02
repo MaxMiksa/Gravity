@@ -2,7 +2,7 @@
  * AppearanceSettings - 外观设置页
  *
  * 主题切换（浅色/深色/跟随系统），使用 SettingsSegmentedControl。
- * 通过 Jotai atom 管理状态，持久化到 ~/.proma/settings.json。
+ * 通过 Jotai atom 管理状态，持久化到 ~/.gravity/settings.json。
  */
 
 import * as React from 'react'

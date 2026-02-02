@@ -25,7 +25,7 @@ import {
 } from '@/atoms/agent-atoms'
 import { activeViewAtom } from '@/atoms/active-view'
 import { appModeAtom } from '@/atoms/app-mode'
-import type { McpServerEntry, SkillMeta, WorkspaceMcpConfig } from '@proma/shared'
+import type { McpServerEntry, SkillMeta, WorkspaceMcpConfig } from '@gravity/shared'
 import { SettingsSection, SettingsCard, SettingsRow } from './primitives'
 import { McpServerForm } from './McpServerForm'
 
@@ -102,7 +102,7 @@ export function AgentSettings(): React.ReactElement {
 
   /** 构建 MCP 配置提示词 */
   const buildMcpPrompt = (): string => {
-    const configPath = `~/.proma/agent-workspaces/${workspaceSlug}/mcp.json`
+    const configPath = `~/.gravity/agent-workspaces/${workspaceSlug}/mcp.json`
     const currentConfig = JSON.stringify(mcpConfig, null, 2)
 
     return `请帮我配置当前工作区的 MCP 服务器，你要主动来帮我实现，你可以采用联网搜索深度研究来尝试，当前环境已经有 Claude Agent SDK 了，除非不确定的时候才来问我，否则默认将帮我完成安装，而不是指导我。
@@ -140,7 +140,7 @@ mcp.json 格式如下：
 
   /** 构建 Skill 配置提示词 */
   const buildSkillPrompt = (): string => {
-    const skillsDir = `~/.proma/agent-workspaces/${workspaceSlug}/skills/`
+    const skillsDir = `~/.gravity/agent-workspaces/${workspaceSlug}/skills/`
     const skillList = skills.length > 0
       ? skills.map((s) => `- ${s.name}: ${s.description ?? '无描述'}`).join('\n')
       : '暂无 Skill'
@@ -327,7 +327,7 @@ ${skillList}
         onClick={() => handleConfigViaChat(buildMcpPrompt())}
       >
         <MessageSquare size={14} />
-        <span>跟 Proma Agent 对话完成配置</span>
+        <span>跟 Gravity Agent 对话完成配置</span>
       </Button>
 
       {/* 区块二：Skills（只读） */}
@@ -365,7 +365,7 @@ ${skillList}
           </SettingsCard>
         )}
         <p className="text-xs text-muted-foreground px-1">
-          路径: ~/.proma/agent-workspaces/{workspaceSlug}/skills/
+          路径: ~/.gravity/agent-workspaces/{workspaceSlug}/skills/
         </p>
 
         <Button
@@ -374,7 +374,7 @@ ${skillList}
           onClick={() => handleConfigViaChat(buildSkillPrompt())}
         >
           <MessageSquare size={14} />
-          <span>跟 Proma Agent 对话完成配置</span>
+          <span>跟 Gravity Agent 对话完成配置</span>
         </Button>
       </SettingsSection>
     </div>
