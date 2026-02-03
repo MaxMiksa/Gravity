@@ -1,5 +1,5 @@
 {
-  "name": "proma",
+  "name": "gravity",
   "version": "0.1.0",
   "description": "The next gen ai software with general agents",
   "type": "module",
@@ -9,12 +9,12 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "bun run --filter='@proma/electron' dev",
-    "electron:dev": "bun run --filter='@proma/electron' dev",
-    "electron:build": "bun run --filter='@proma/electron' build",
-    "electron:start": "bun run --filter='@proma/electron' start",
-    "build": "bun run --filter='*' build",
-    "typecheck": "bun run --filter='*' typecheck"
+    "dev": "bun run --filter=@gravity/electron dev",
+    "electron:dev": "bun run --filter=@gravity/electron dev",
+    "electron:build": "bun run --filter=@gravity/electron build",
+    "electron:start": "bun run --filter=@gravity/electron start",
+    "build": "bun run --filter=* build",
+    "typecheck": "bun run --filter=* typecheck"
   },
   "devDependencies": {
     "@types/bun": "latest",
