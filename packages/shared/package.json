@@ -1,8 +1,8 @@
 {
-  "name": "@proma/shared",
+  "name": "@gravity/shared",
   "version": "0.1.9",
   "license": "Apache-2.0",
-  "description": "Shared types, configs and utilities for proma",
+  "description": "Shared types, configs and utilities for gravity",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
