@@ -1,5 +1,5 @@
 /**
- * @proma/shared - Shared types, configs and utilities
+ * @gravity/shared - Shared types, configs and utilities
  */
 
 export * from './types/index'
