@@ -63,7 +63,7 @@ export type AgentEvent =
 /**
  * Agent 会话轻量索引项
  *
- * 存储在 ~/.proma/agent-sessions.json 中，
+ * 存储在 ~/.gravity/agent-sessions.json 中，
  * 类似 ConversationMeta，独立存储。
  */
 export interface AgentSessionMeta {
@@ -86,7 +86,7 @@ export interface AgentSessionMeta {
 /**
  * Agent 持久化消息
  *
- * 存储在 ~/.proma/agent-sessions/{id}.jsonl 中。
+ * 存储在 ~/.gravity/agent-sessions/{id}.jsonl 中。
  */
 export interface AgentMessage {
   /** 消息唯一标识 */
