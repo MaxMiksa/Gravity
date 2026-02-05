@@ -106,7 +106,7 @@ export interface Conversation {
 /**
  * 对话轻量索引项
  *
- * 存储在 ~/.proma/conversations.json 中，
+ * 存储在 ~/.gravity/conversations.json 中，
  * 不包含消息列表，用于快速加载对话列表。
  */
 export interface ConversationMeta {
