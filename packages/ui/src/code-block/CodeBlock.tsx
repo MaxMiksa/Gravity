@@ -20,8 +20,8 @@
  */
 
 import * as React from 'react'
-import { highlightCode, highlightToTokens } from '@proma/core'
-import type { HighlightToken, HighlightTokensResult } from '@proma/core'
+import { highlightCode, highlightToTokens } from '@gravity/core'
+import type { HighlightToken, HighlightTokensResult } from '@gravity/core'
 
 /** react-markdown 传入的 <code> 元素 props */
 interface CodeElementProps {
