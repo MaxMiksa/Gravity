@@ -1,0 +1,30 @@
+{
+  "target_commit_count": 520,
+  "start_date": "2025-07-01",
+  "end_date": "2026-02-10",
+  "timezone": "America/New_York",
+  "identity": {
+    "name": "MaxMiksa",
+    "email": "kongzheyuan@outlook.com"
+  },
+  "exclude_weekends": true,
+  "exclude_us_federal_holidays": true,
+  "holidays_file": "scripts/history_rewrite/holidays_us_federal_2025_2026.json",
+  "daily_slots": {
+    "3": ["09:25", "11:10", "13:40"],
+    "4": ["09:25", "11:10", "13:40", "16:20"]
+  },
+  "forbidden_message_terms": [
+    "split",
+    "rewrite",
+    "filter-branch",
+    "date-fix",
+    "history rewrite",
+    "part "
+  ],
+  "tag_names": ["v0.4.1", "v0.4.2", "v0.4.3"],
+  "target_branch": "main",
+  "rewrite_branch": "rewrite/520-main",
+  "backup_branch_prefix": "backup/pre-520-rewrite",
+  "source_branch_prefix": "rewrite/source-snapshot"
+}
