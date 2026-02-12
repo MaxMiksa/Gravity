@@ -18,7 +18,7 @@ It combines general chat, autonomous agents, and local data control into one wor
 ## 🎬 Visual Demo
 
 <p align="center">
-  <img src="https://img.erlich.fun/personal-blog/uPic/tBXRKI.png" alt="Gravity Chat Mode" width="900" />
+  <img src="https://img.erlich.fun/personal-blog/uPic/3ZHWyA.png" alt="Gravity Agent Mode" width="900" />
 </p>
 
 ## ✨ Core Features
@@ -76,10 +76,9 @@ npm run build
 </details>
 
 <details>
-  <summary><strong>Commercial Edition (Optional)</strong></summary>
+  <summary><strong>License</strong></summary>
 
-Need cloud-hosted capabilities and managed API plans?
-Use the commercial edition: https://gravity.cool/download
+[MIT](./LICENSE)
 
 </details>
 
@@ -89,7 +88,3 @@ Welcome to submit Issues and Pull Requests!
 Any questions or suggestions? Please contact Zheyuan (Max) Kong (Carnegie Mellon University, Pittsburgh, PA).
 
 Zheyuan (Max) Kong: kongzheyuan@outlook.com | zheyuank@andrew.cmu.edu
-
-## 📄 License
-
-[MIT](./LICENSE)

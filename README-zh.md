@@ -18,7 +18,7 @@ Gravity 是一个面向生产效率的 AI 桌面应用，核心目标是把通�
 ## 🎬 可视化演示
 
 <p align="center">
-  <img src="https://img.erlich.fun/personal-blog/uPic/tBXRKI.png" alt="Gravity Chat Mode" width="900" />
+  <img src="https://img.erlich.fun/personal-blog/uPic/3ZHWyA.png" alt="Gravity Agent Mode" width="900" />
 </p>
 
 ## ✨ 核心特性
@@ -76,10 +76,9 @@ npm run build
 </details>
 
 <details>
-  <summary><strong>商业版本（可选）</strong></summary>
+  <summary><strong>开源许可</strong></summary>
 
-如需云端能力、稳定 API 与订阅服务，可使用商业版本：
-https://gravity.cool/download
+[MIT](./LICENSE)
 
 </details>
 
@@ -89,7 +88,3 @@ https://gravity.cool/download
 如有任何问题或建议，请联系 Zheyuan (Max) Kong (卡内基梅隆大学，宾夕法尼亚州)。
 
 Zheyuan (Max) Kong: kongzheyuan@outlook.com | zheyuank@andrew.cmu.edu
-
-## 📄 开源许可
-
-[MIT](./LICENSE)
