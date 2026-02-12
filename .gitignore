@@ -46,6 +46,8 @@ vendor
 backups/history_rewrite/*.bundle
 
 # local docs / planning artifacts (keep local only, do not sync to GitHub)
+AGENTS.md
+CLAUDE.md
 CHAT_LOGS.md
 PROJECT.md
 CHANGELOG.md
