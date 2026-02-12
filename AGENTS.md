@@ -47,3 +47,7 @@
 - Symptom: Running `npx electron .` failed with `TypeError: Cannot read properties of undefined (reading 'whenReady')` from `dist/main.cjs`.
 - Cause: Environment variable `ELECTRON_RUN_AS_NODE=1` was set, so Electron ran in Node mode and `require('electron')` returned no `app` API.
 - Fix: Clear env var before launch on PowerShell: `Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue`.
+
+- Symptom: `scripts/history_rewrite/replay_blueprint.py` repeatedly failed at clean-check with `Working tree is not clean` right after Python runs.
+- Cause: Python auto-generated `scripts/history_rewrite/__pycache__/` before the script's clean-worktree guard, making the repo dirty.
+- Fix: Run rewrite/verify commands with `PYTHONDONTWRITEBYTECODE=1` and clean cache dirs first when needed (`git clean -fd scripts/history_rewrite/__pycache__/`).

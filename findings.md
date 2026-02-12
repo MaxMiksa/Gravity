@@ -106,3 +106,32 @@
 -->
 *Update this file after every 2 view/browser/search operations*
 *This prevents visual information from being lost*
+
+---
+
+## Session 2026-02-12: Full-Scope Sync Findings
+
+### Confirmed Constraints
+- Local history must not be replaced; only add new commits.
+- Build must pass after sync.
+- Future sync flow should be repeatable and documented.
+- New commits must reuse local rewritten metadata convention.
+
+### Implemented So Far
+- P0 landed with 4 commits:
+  - `1cacce6` chat empty-response filtering/persist behavior
+  - `3455346` updater install timing + active-session cleanup
+  - `e25b589` builder SDK exclusion
+  - `f2a846f` default `find-skills` skill restored
+- Full-scope continuation landed with 3 commits:
+  - `67d3f31` agent skill namespace enforcement in system prompt
+  - `bee7ef4` core恢复（环境检测、消息截断重发链路、macOS/tray 行为）
+  - `5f890bc` renderer恢复（inline edit、onboarding、update 红点和 UI 组件）
+
+### Working Baseline
+- Build verification after full-scope continuation: `npm run build` passed.
+
+### Closure Recheck (2026-02-12)
+- Rechecked remaining `main..gravity/main` diffs at patch level.
+- Remaining non-functional drift is mainly branding text/links and version bumps.
+- Kept local Windows-friendly dev script strategy (`node -e setTimeout(...)`) and did not adopt `sleep 2`.

@@ -4,8 +4,8 @@
   "description": "Gravity next gen ai software with general agents - Electron App",
   "main": "dist/main.cjs",
   "author": {
-    "name": "ErlichLiu",
-    "email": "erlichliu@gmail.com"
+    "name": "MaxMiksa",
+    "email": "kongzheyuan@outlook.com"
   },
   "private": true,
   "type": "module",

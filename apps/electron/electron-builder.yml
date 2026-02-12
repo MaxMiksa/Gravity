@@ -121,5 +121,5 @@ nsis:
 # ============================================
 publish:
   provider: github
-  owner: ErlichLiu
+  owner: MaxMiksa
   repo: Gravity

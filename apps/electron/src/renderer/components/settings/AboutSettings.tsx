@@ -279,12 +279,12 @@ export function AboutSettings(): React.ReactElement {
         </SettingsRow>
         <SettingsRow label="项目地址">
           <a
-            href="https://github.com/ErlichLiu/Gravity.git"
+            href="https://github.com/MaxMiksa/Gravity.git"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-primary hover:underline"
           >
-            github.com/ErlichLiu/Gravity
+            github.com/MaxMiksa/Gravity
           </a>
         </SettingsRow>
       </SettingsCard>

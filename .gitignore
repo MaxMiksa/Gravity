@@ -41,3 +41,6 @@ what_are_humans_thinking
 
 # vendor binaries
 vendor
+
+# rewrite backups
+backups/history_rewrite/*.bundle

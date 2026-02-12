@@ -126,3 +126,33 @@ Phase 1
 - Update phase status as you progress: pending → in_progress → complete
 - Re-read this plan before major decisions (attention manipulation)
 - Log ALL errors - they help avoid repetition
+
+---
+
+## Session 2026-02-12: Gravity Incremental Sync (Full Scope)
+
+### Goal
+Apply all functionally valuable cloud updates from `gravity/main` into local `main` (keep `gravity` naming, keep local history), then verify build and create local granular commits.
+
+### Current Phase
+Completed
+
+### Phases
+- Phase A: Re-baseline remaining non-branding diffs after finished P0 commits (`complete`)
+- Phase B: Implement chat inline-edit/resend and shared type/IPC chain (`complete`)
+- Phase C: Implement environment-check/onboarding and related renderer/main/shared files (`complete`)
+- Phase D: Implement additional high-value residual deltas outside P0/P1/P2 if needed (`complete`)
+- Phase E: Verification (`npm run build`) and granular commits with local metadata (`complete`)
+- Phase F: Documentation updates (`CHAT_LOGS.md` + `PROJECT.md`) (`complete`)
+
+### Decisions
+| Decision | Rationale |
+|---|---|
+| Sync by functionality, not by history topology | User explicitly keeps local split-commit history |
+| Keep `gravity` naming everywhere | User requirement and repo intent |
+| Commit only newly applied deltas | Preserve existing 520+ history and append new pool entries |
+
+### Errors Encountered (Session)
+| Error | Attempt | Resolution |
+|---|---|---|
+| `git commit` with inline env assignment failed in PowerShell | 1 | Switched to `$env:KEY=\"value\"` syntax |
