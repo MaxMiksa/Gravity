@@ -132,7 +132,10 @@ function filterHistory(
   contextDividers?: string[],
   contextLength?: number | 'infinite',
 ): ChatMessage[] {
-  let filtered = [...messageHistory]
+  // 过滤掉空内容的助手消息，避免发送无效消息给 API
+  let filtered = messageHistory.filter(
+    (msg) => !(msg.role === 'assistant' && !msg.content.trim()),
+  )
 
   // 分隔线过滤：仅保留最后一个分隔线之后的消息
   if (contextDividers && contextDividers.length > 0) {
@@ -274,29 +277,33 @@ export async function sendMessage(
       },
     })
 
-    // 8. 保存 assistant 消息
+    // 8. 保存 assistant 消息（空内容不保存）
     const assistantMsgId = randomUUID()
-    const assistantMsg: ChatMessage = {
-      id: assistantMsgId,
-      role: 'assistant',
-      content,
-      createdAt: Date.now(),
-      model: modelId,
-      reasoning: reasoning || undefined,
-    }
-    appendMessage(conversationId, assistantMsg)
+    if (content.trim()) {
+      const assistantMsg: ChatMessage = {
+        id: assistantMsgId,
+        role: 'assistant',
+        content,
+        createdAt: Date.now(),
+        model: modelId,
+        reasoning: reasoning || undefined,
+      }
+      appendMessage(conversationId, assistantMsg)
 
-    // 更新对话索引的 updatedAt
-    try {
-      updateConversationMeta(conversationId, {})
-    } catch {
-      // 索引更新失败不影响主流程
+      // 更新对话索引的 updatedAt
+      try {
+        updateConversationMeta(conversationId, {})
+      } catch {
+        // 索引更新失败不影响主流程
+      }
+    } else {
+      console.warn(`[聊天服务] 模型返回空内容，跳过保存 (对话 ${conversationId})`)
     }
 
     webContents.send(CHAT_IPC_CHANNELS.STREAM_COMPLETE, {
       conversationId,
       model: modelId,
-      messageId: assistantMsgId,
+      messageId: content.trim() ? assistantMsgId : undefined,
     })
   } catch (error) {
     // 被中止的请求：保存已输出的部分内容，通知前端停止
@@ -358,6 +365,17 @@ export function stopGeneration(conversationId: string): void {
     activeControllers.delete(conversationId)
     console.log(`[聊天服务] 已中止对话: ${conversationId}`)
   }
+}
+
+/** 中止所有活跃的聊天流（应用退出时调用） */
+export function stopAllGenerations(): void {
+  if (activeControllers.size === 0) return
+  console.log(`[聊天服务] 正在中止所有活跃对话 (${activeControllers.size} 个)...`)
+  for (const [conversationId, controller] of activeControllers) {
+    controller.abort()
+    console.log(`[聊天服务] 已中止对话: ${conversationId}`)
+  }
+  activeControllers.clear()
 }
 
 // ===== 标题生成 =====
