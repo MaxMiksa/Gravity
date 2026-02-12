@@ -9,6 +9,8 @@ import { autoUpdater } from 'electron-updater'
 import type { BrowserWindow } from 'electron'
 import type { UpdateStatus } from './updater-types'
 import { UPDATER_IPC_CHANNELS } from './updater-types'
+import { stopAllAgents } from '../agent-service'
+import { stopAllGenerations } from '../chat-service'
 
 /** 当前更新状态 */
 let currentStatus: UpdateStatus = { status: 'idle' }
@@ -58,7 +60,24 @@ export async function downloadUpdate(): Promise<void> {
 
 /** 退出并安装更新 */
 export function installUpdate(): void {
-  autoUpdater.quitAndInstall()
+  console.log('[更新] 准备安装更新，正在清理子进程...')
+  stopAllAgents()
+  stopAllGenerations()
+  cleanupUpdater()
+  console.log('[更新] 子进程已清理，延迟执行 quitAndInstall')
+  // 延迟调用 quitAndInstall，让 IPC handler 先返回响应
+  // 否则渲染进程等待 IPC 响应会阻塞退出流程
+  setImmediate(() => {
+    autoUpdater.quitAndInstall(false, true)
+  })
+}
+
+/** 清理更新器资源（定时器等） */
+export function cleanupUpdater(): void {
+  if (checkInterval) {
+    clearInterval(checkInterval)
+    checkInterval = null
+  }
 }
 
 /**
