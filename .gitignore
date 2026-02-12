@@ -44,3 +44,14 @@ vendor
 
 # rewrite backups
 backups/history_rewrite/*.bundle
+
+# local docs / planning artifacts (keep local only, do not sync to GitHub)
+CHAT_LOGS.md
+PROJECT.md
+CHANGELOG.md
+CHANGELOG-zh.md
+RELEASE_NOTES.md
+task_plan.md
+findings.md
+finding.md
+progress.md
