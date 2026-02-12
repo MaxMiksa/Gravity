@@ -6,7 +6,7 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron'
-import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS } from '@gravity/shared'
+import { IPC_CHANNELS, CHANNEL_IPC_CHANNELS, CHAT_IPC_CHANNELS, AGENT_IPC_CHANNELS, ENVIRONMENT_IPC_CHANNELS } from '@gravity/shared'
 import { USER_PROFILE_IPC_CHANNELS, SETTINGS_IPC_CHANNELS } from '../types'
 import type {
   RuntimeStatus,
@@ -42,6 +42,7 @@ import type {
   SkillMeta,
   WorkspaceCapabilities,
   FileEntry,
+  EnvironmentCheckResult,
 } from '@gravity/shared'
 import type { UserProfile, AppSettings } from '../types'
 
@@ -132,6 +133,13 @@ export interface ElectronAPI {
   /** 删除指定消息 */
   deleteMessage: (conversationId: string, messageId: string) => Promise<ChatMessage[]>
 
+  /** 从指定消息开始截断（包含该消息） */
+  truncateMessagesFrom: (
+    conversationId: string,
+    messageId: string,
+    preserveFirstMessageAttachments?: boolean,
+  ) => Promise<ChatMessage[]>
+
   /** 更新上下文分隔线 */
   updateContextDividers: (conversationId: string, dividers: string[]) => Promise<ConversationMeta>
 
@@ -176,6 +184,11 @@ export interface ElectronAPI {
 
   /** 订阅系统主题变化事件（返回清理函数） */
   onSystemThemeChanged: (callback: (isDark: boolean) => void) => () => void
+
+  // ===== 环境检测相关 =====
+
+  /** 执行环境检测 */
+  checkEnvironment: () => Promise<EnvironmentCheckResult>
 
   // ===== 流式事件订阅（返回清理函数） =====
 
@@ -409,6 +422,19 @@ const electronAPI: ElectronAPI = {
     return ipcRenderer.invoke(CHAT_IPC_CHANNELS.DELETE_MESSAGE, conversationId, messageId)
   },
 
+  truncateMessagesFrom: (
+    conversationId: string,
+    messageId: string,
+    preserveFirstMessageAttachments = false,
+  ) => {
+    return ipcRenderer.invoke(
+      CHAT_IPC_CHANNELS.TRUNCATE_MESSAGES_FROM,
+      conversationId,
+      messageId,
+      preserveFirstMessageAttachments,
+    )
+  },
+
   updateContextDividers: (conversationId: string, dividers: string[]) => {
     return ipcRenderer.invoke(CHAT_IPC_CHANNELS.UPDATE_CONTEXT_DIVIDERS, conversationId, dividers)
   },
@@ -464,6 +490,11 @@ const electronAPI: ElectronAPI = {
     const listener = (_: unknown, isDark: boolean): void => callback(isDark)
     ipcRenderer.on(SETTINGS_IPC_CHANNELS.ON_SYSTEM_THEME_CHANGED, listener)
     return () => { ipcRenderer.removeListener(SETTINGS_IPC_CHANNELS.ON_SYSTEM_THEME_CHANGED, listener) }
+  },
+
+  // 环境检测
+  checkEnvironment: () => {
+    return ipcRenderer.invoke(ENVIRONMENT_IPC_CHANNELS.CHECK)
   },
 
   // 流式事件订阅

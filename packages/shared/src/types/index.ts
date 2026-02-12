@@ -20,3 +20,6 @@ export * from './chat'
 
 // Agent 相关类型
 export * from './agent'
+
+// 环境检测相关类型
+export * from './environment'
